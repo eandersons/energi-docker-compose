@@ -1,6 +1,6 @@
 # Energi Gen 3 Core Node in a Docker container using `docker-compose`
 
-This repository is meant to ease running Energi Gen 3 Core Node in a Docker container.
+This repository is meant to ease running Energi Gen 3 Core Node in a Docker container using Docker Compose and the official [Energi Gen 3 image](https://hub.docker.com/r/energicryptocurrency/energi3).
 
 This repository was created with a single account staking in mind. More adjustments may be needed to stake using multiple accounts or to use Energi Gen 3 Core Node as a Masternode.
 Current solution for staking multiple accounts would be to run multiple containers, but it may be not an ideal solution performance-wise.
