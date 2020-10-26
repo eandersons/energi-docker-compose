@@ -1,4 +1,4 @@
-FROM energicryptocurrency/energi3:v3.0.6
+FROM energicryptocurrency/energi3:v3.0.7
 
 RUN ["mkdir", "/root/energi3"]
 
