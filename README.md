@@ -21,7 +21,7 @@ To run Energi Gen 3 Core Node in a Docker container:
   cd /path/to/energi3-provisioning/Docker
   docker-compose up --detach
   ```
-
+- copy keystore file to `volumes\.energi3\keystore`
 - open the necessary ports for external inbound access in router and/or firewall:
   - `39797` TCP;
   - `39797` UDP;
