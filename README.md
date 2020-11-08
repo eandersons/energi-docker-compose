@@ -5,6 +5,8 @@ This repository is meant to ease running Energi Gen 3 Core Node in a Docker cont
 This repository was created with a single account staking in mind. More adjustments may be needed to stake using multiple accounts or to use Energi Gen 3 Core Node as a Masternode.
 Current solution for staking multiple accounts would be to run multiple containers, but it may be not an ideal solution performance-wise.
 
+Additional information can be found in (the wiki)[https://github.com/eandersons/energi3-docker-compose/wiki/Documentation].
+
 ## Run Energi Gen 3 Core Node using `docker-compose`
 
 To run Energi Gen 3 Core Node in a Docker container:
@@ -37,3 +39,14 @@ To check if Energi Gen 3 Core Node is running and account is unlocked for stakin
 
   values for `miner` and `staking` should be `true`;
   if not, block synchronisation is in progress; it can be checked with the command in Energi Core Node console: `nrg.syncing`; when the output is `false`, check output of `miner.stakingStatus()` again.
+
+## Update
+
+Steps to update Energi Core Node container:
+
+- stop the Energi Core Node container:
+  `docker-compose down`;
+- pull changes from repository:
+  `git pull`;
+- build image and start the container:
+  `docker-compose up --build --detach`.
