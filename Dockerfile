@@ -1,11 +1,11 @@
 FROM energicryptocurrency/energi3:v3.0.7
 
+RUN apk --no-cache add curl
+
 RUN ["mkdir", "/root/energi3"]
 
 WORKDIR /root/energi3
 
-COPY --chown=root:root ["energi3-core-run.sh", "./"]
+COPY --chown=root:root ["scripts", "./"]
 
-RUN ["chmod", "+x", "energi3-core-run.sh"]
-
-ENTRYPOINT ["./energi3-core-run.sh"]
+ENTRYPOINT ["/bin/sh", "energi3-core-run.sh"]

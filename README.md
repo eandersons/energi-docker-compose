@@ -5,7 +5,16 @@ This repository is meant to ease running Energi Gen 3 Core Node in a Docker cont
 This repository was created with a single account staking in mind. More adjustments may be needed to stake using multiple accounts or to use Energi Gen 3 Core Node as a Masternode.
 Current solution for staking multiple accounts would be to run multiple containers, but it may be not an ideal solution performance-wise.
 
-Additional information can be found in (the wiki)[https://github.com/eandersons/energi3-docker-compose/wiki/Documentation].
+---
+
+- [Energi Gen 3 Core Node in a Docker container using Docker Compose](#energi-gen-3-core-node-in-a-docker-container-using-docker-compose)
+  - [Run Energi Gen 3 Core Node using `docker-compose`](#run-energi-gen-3-core-node-using-docker-compose)
+  - [Troubleshooting](#troubleshooting)
+    - [Apply preimages](#apply-preimages)
+    - [Bootstrap chaindata](#bootstrap-chaindata)
+  - [Update](#update)
+
+---
 
 ## Run Energi Gen 3 Core Node using `docker-compose`
 
@@ -40,13 +49,52 @@ To check if Energi Gen 3 Core Node is running and account is unlocked for stakin
   values for `miner` and `staking` should be `true`;
   if not, block synchronisation is in progress; it can be checked with the command in Energi Core Node console: `nrg.syncing`; when the output is `false`, check output of `miner.stakingStatus()` again.
 
+## Troubleshooting
+
+General troubleshooting is described in the official [Energi troubleshooting guide](https://docs.energi.software/en/core-node-troubleshoot).
+
+The following actions executed one by one might help if something goes sideways with chain synchronisation in Energi Core Node container:
+
+1. restart or recreate container:
+   `docker-compose restart` or `docker-compose up --force-recreate --detach`;
+2. [apply preimages](#apply-preimages);
+3. [bootstrap chaindata](#bootstrap-chaindata).
+
+### Apply preimages
+
+Official Energi documentation: [Apply Preimages](https://docs.energi.software/en/core-node-troubleshoot#preimage).
+
+To apply preimages for Energi Core Node container:
+
+- stop Energi Core Node container:
+  `docker-compose stop`;
+- apply preimages:
+  `./apply-preimages.sh`
+  > In this script `docker-compose` is used so `sudo` might be necessary.
+- start Energi Core Node container:
+  `docker-compose start`.
+
+### Bootstrap chaindata
+
+Official Energi documentation: [Bootstrap Chaindata](https://docs.energi.software/en/core-node-troubleshoot#bootstrap).
+
+To bootstrap chaindata for Energi Core Node container:
+
+- stop Energi Core Node container:
+  `docker-compose stop`;
+- bootstrap chaindata:
+  `./bootstrap-chaindata.sh`
+  > In this script `docker-compose` is used so `sudo` might be necessary.
+- start Energi Core Node container:
+  `docker-compose start`.
+
 ## Update
 
 Steps to update Energi Core Node container:
 
-- stop the Energi Core Node container:
+1. stop and remove the Energi Core Node container:
   `docker-compose down`;
-- pull changes from repository:
+2. pull changes from repository:
   `git pull`;
-- build image and start the container:
+3. build image and start the container:
   `docker-compose up --build --detach`.
