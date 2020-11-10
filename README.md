@@ -62,7 +62,7 @@ The following actions executed one by one might help if something goes sideways 
 
 ### Apply preimages
 
-Official Energi documentation: [Apply Preimages](https://docs.energi.software/en/core-node-troubleshoot#preimage).
+Official Energi documentation: [Apply Preimages](https://docs.energi.software/en/core-node-troubleshoot#preimages).
 
 To apply preimages for Energi Core Node container:
 
@@ -70,6 +70,8 @@ To apply preimages for Energi Core Node container:
   `docker-compose stop`;
 - apply preimages:
   `./apply-preimages.sh`
+  > This script should be made executable or it can be executed with shell binary (for example: `bash apply-preimages.sh`).
+  >
   > In this script `docker-compose` is used so `sudo` might be necessary.
 - start Energi Core Node container:
   `docker-compose start`.
@@ -84,6 +86,8 @@ To bootstrap chaindata for Energi Core Node container:
   `docker-compose stop`;
 - bootstrap chaindata:
   `./bootstrap-chaindata.sh`
+  > This script should be made executable or it can be executed with shell binary (for example: `bash bootstrap-chaindata.sh`).
+  >
   > In this script `docker-compose` is used so `sudo` might be necessary.
 - start Energi Core Node container:
   `docker-compose start`.
