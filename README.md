@@ -26,14 +26,13 @@ To run Energi Gen 3 Core Node in a Docker container:
   - `configs/energi3_account_password` that contains the Energi Gen 3 account password;
 
   these files are used to get account's address and password to automatically unlock account for staking when launching Energi Gen 3 Core Node;
-- copy keystore file to `/path/to/energi3-docker-compose/volumes/root/.energicore3/keystore`;
-- create and start Docker container using `docker-compose` (`sudo` may be necessary to use `docker-compose`):
-
-  ``` sh
-  cd /path/to/energi3-provisioning/Docker
-  docker-compose up --detach
-  ```
-
+- copy keystore file to `volumes/root/.energicore3/keystore`;
+- bootstrap chaindata: `./bootstrap-chaindata.sh`;
+  > `bootstrap-chaindata.sh` should be made executable or it can be run using a shell binary (for example: `bash bootstrap-chaindata.sh`);
+  >
+  > `docker-compose run` is used in `bootstrap-chaindata.sh` so `sudo` might be necessary.
+- create and start Docker container using `docker-compose` (`sudo` might be necessary to execute it):
+  `docker-compose up --detach`
 - open the necessary ports for external inbound access in router and/or firewall:
   - `39797` TCP;
   - `39797` UDP;
