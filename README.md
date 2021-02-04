@@ -27,12 +27,10 @@ To run Energi Gen 3 Core Node in a Docker container:
 
   these files are used to get account's address and password to automatically unlock account for staking when launching Energi Gen 3 Core Node;
 - copy keystore file to `volumes/root/.energicore3/keystore`;
-- bootstrap chaindata: `./bootstrap-chaindata.sh`;
+- bootstrap chaindata and start the Energi Gen 3 Core Node container: `./bootstrap-chaindata.sh`;
   > `bootstrap-chaindata.sh` should be made executable or it can be run using a shell binary (for example: `bash bootstrap-chaindata.sh`);
   >
   > `docker-compose run` is used in `bootstrap-chaindata.sh` so `sudo` might be necessary.
-- create and start Docker container using `docker-compose` (`sudo` might be necessary to execute it):
-  `docker-compose up --detach`
 - open the necessary ports for external inbound access in router and/or firewall:
   - `39797` TCP;
   - `39797` UDP;
@@ -52,44 +50,35 @@ To check if Energi Gen 3 Core Node is running and account is unlocked for stakin
 
 General troubleshooting is described in the official [Energi troubleshooting guide](https://docs.energi.software/en/core-node-troubleshoot).
 
-The following actions executed one by one might help if something goes sideways with chain synchronisation in Energi Core Node container:
+The following actions executed one by one might help if something goes sideways with chain synchronisation in Energi Gen 3 Core Node container:
 
-1. restart or recreate container:
-   `docker-compose restart` or `docker-compose up --force-recreate --detach`;
-2. [apply preimages](#apply-preimages);
-3. [bootstrap chaindata](#bootstrap-chaindata).
+1. [apply preimages](#apply-preimages);
+
+   if the problem is not solved, the next step should be executed;
+
+2. [bootstrap chaindata](#bootstrap-chaindata).
+
+If applying preimages and bootstraping chaindata did not help, it might help if those actions are executed again. [Energi support](https://docs.energi.software/en/support/help-me) should be contacted if the problem is still persistent after multiple tries.
 
 ### Apply preimages
 
 Official Energi documentation: [Apply Preimages](https://docs.energi.software/en/core-node-troubleshoot#preimages).
 
-To apply preimages for Energi Core Node container:
+To apply preimages for Energi Gen 3 Core Node container the following command can be used: `./apply-preimages.sh`.
 
-- stop Energi Core Node container:
-  `docker-compose stop`;
-- apply preimages:
-  `./apply-preimages.sh`
-  > This script should be made executable or it can be executed with shell binary (for example: `bash apply-preimages.sh`).
-  >
-  > In this script `docker-compose` is used so `sudo` might be necessary.
-- start Energi Core Node container:
-  `docker-compose start`.
+> This script should be made executable or it can be executed with shell binary (for example: `bash apply-preimages.sh`).
+>
+> In this script `docker-compose` is used so `sudo` might be necessary.
 
 ### Bootstrap chaindata
 
 Official Energi documentation: [Bootstrap Chaindata](https://docs.energi.software/en/core-node-troubleshoot#bootstrap).
 
-To bootstrap chaindata for Energi Core Node container:
+To bootstrap chaindata for Energi Core Node container the following command can be used: `./bootstrap-chaindata.sh`.
 
-- stop Energi Core Node container:
-  `docker-compose stop`;
-- bootstrap chaindata:
-  `./bootstrap-chaindata.sh`
-  > This script should be made executable or it can be executed with shell binary (for example: `bash bootstrap-chaindata.sh`).
-  >
-  > In this script `docker-compose` is used so `sudo` might be necessary.
-- start Energi Core Node container:
-  `docker-compose start`.
+> This script should be made executable or it can be executed with shell binary (for example: `bash bootstrap-chaindata.sh`).
+>
+> In this script `docker-compose` is used so `sudo` might be necessary.
 
 ## Update
 
