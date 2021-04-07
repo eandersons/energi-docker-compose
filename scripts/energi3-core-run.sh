@@ -6,7 +6,7 @@
 energi3\
  --masternode\
  --maxpeers 128\
- --mine\
+ --mine=1\
  --nat extip:`wget -qO- https://api.ipify.org`\
  --password /run/secrets/account_password\
  --unlock `cat /run/secrets/account_address`\

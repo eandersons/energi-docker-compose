@@ -1,4 +1,4 @@
-FROM energicryptocurrency/energi3:v3.0.7
+FROM energicryptocurrency/energi3:v3.0.8
 
 RUN apk --no-cache add curl
 
