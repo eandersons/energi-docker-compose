@@ -7,6 +7,7 @@ This repository was created for staking. More adjustments may be necessary to ru
 ---
 
 - [Energi Gen 3 Core Node in a Docker container using Docker Compose](#energi-gen-3-core-node-in-a-docker-container-using-docker-compose)
+  - [Prerequisites](#prerequisites)
   - [Run Energi Gen 3 Core Node using `docker-compose`](#run-energi-gen-3-core-node-using-docker-compose)
   - [Troubleshooting](#troubleshooting)
     - [Apply preimages](#apply-preimages)
@@ -14,6 +15,14 @@ This repository was created for staking. More adjustments may be necessary to ru
   - [Update](#update)
 
 ---
+
+## Prerequisites
+
+Requirements to run a Energi 3 Core Node in a Docker container:
+
+- [Docker](https://docs.docker.com/engine/install/);
+- [Docker Compose](https://docs.docker.com/compose/install/);
+- enough free space to store blockchain data (as of mid April 2021 size of the data directory `.energicore3` is roughly 30 GB).
 
 ## Run Energi Gen 3 Core Node using `docker-compose`
 
