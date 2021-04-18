@@ -2,8 +2,7 @@
 
 This repository is meant to ease running Energi Gen 3 Core Node in a Docker container using [Docker Compose](https://docs.docker.com/compose/) and the official [Energi Gen 3 image](https://hub.docker.com/r/energicryptocurrency/energi3).
 
-This repository was created with a single account staking in mind. More adjustments may be needed to stake using multiple accounts or to use Energi Gen 3 Core Node as a Masternode.
-Current solution for staking multiple accounts would be to run multiple containers, but it may be not an ideal solution performance-wise.
+This repository was created for staking. More adjustments may be necessary to run containerised Energi Gen 3 Core Node as a Masternode.
 
 ---
 
@@ -23,7 +22,11 @@ To run Energi Gen 3 Core Node in a Docker container:
 - clone this git repository: `git clone https://github.com/eandersons/energi3-docker-compose.git`;
 - create the following files:
   - `configs/energi3_account_address` that contains the Energi Gen 3 account address;
+
+    to add multiple accounts for staking, they must be specified as a comma separated list of addresses;
   - `configs/energi3_account_password` that contains the Energi Gen 3 account password;
+
+    to use multiple accounts for staking each password must be entered in a separate line in the same order addresses are specified in `configs/energi3_account_address`;
 
   these files are used to get account's address and password to automatically unlock account for staking when launching Energi Gen 3 Core Node;
 - copy keystore file to `volumes/root/.energicore3/keystore`;
