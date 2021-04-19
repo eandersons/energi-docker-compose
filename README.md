@@ -13,6 +13,7 @@ This repository was created for staking. More adjustments may be necessary to ru
     - [Apply preimages](#apply-preimages)
     - [Bootstrap chaindata](#bootstrap-chaindata)
   - [Update](#update)
+  - [Credits](#credits)
 
 ---
 
@@ -103,3 +104,11 @@ Steps to update Energi Core Node container:
   `git pull`;
 2. to build image and recreate and run the container:
   `docker-compose up --build --force-recreate --detach`.
+
+## Credits
+
+A list of tools and sources used in this repository:
+
+- [Docker Engine](https://docs.docker.com/engine/);
+- [Docker Compose](https://docs.docker.com/compose/);
+- [Energi Docker image](https://hub.docker.com/r/energicryptocurrency/energi3) (source: [Energi Core GitHub repository](https://github.com/energicryptocurrency/energi3) ([`containers/docker/master-alpine/Dockerfile`](https://github.com/energicryptocurrency/energi3/blob/master/containers/docker/master-alpine/Dockerfile))).
