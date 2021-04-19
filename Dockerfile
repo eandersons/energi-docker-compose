@@ -1,11 +1,21 @@
 FROM energicryptocurrency/energi3:v3.0.8
 
-RUN apk --no-cache add curl
+ENV USER_AND_GROUP_ID=1000
+ENV USERNAME=nrgstaker
+ENV NRGSTAKER_HOME=/home/${USERNAME}
 
-RUN ["mkdir", "/root/energi3"]
+WORKDIR ${NRGSTAKER_HOME}/energi3
 
-WORKDIR /root/energi3
+RUN addgroup --gid ${USER_AND_GROUP_ID} ${USERNAME} &&\
+ adduser\
+ --uid ${USER_AND_GROUP_ID} ${USERNAME}\
+ --ingroup ${USERNAME}\
+ --disabled-password &&\
+ chown -R ${USERNAME}:${USERNAME} ${NRGSTAKER_HOME};\
+ apk --no-cache add curl
 
-COPY --chown=root:root ["scripts", "./"]
+COPY --chown=${USERNAME}:${USERNAME} ["scripts", "./"]
+
+USER ${USERNAME}
 
 ENTRYPOINT ["/bin/sh", "energi3-core-run.sh"]

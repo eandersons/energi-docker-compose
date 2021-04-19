@@ -1,8 +1,15 @@
-version: "3.7"
+version: "3.8"
+
+secrets:
+  account_address:
+    file: ./configs/energi3_account_address
+  account_password:
+    file: ./configs/energi3_account_password
 
 services:
   core:
     build: .
+    image: energi-container:3.0.8-0.1.0
     ports:
       - 39797:39797/tcp
       - 39797:39797/udp
@@ -11,10 +18,7 @@ services:
       - account_address
       - account_password
     volumes:
-      - ./volumes/root/.energicore3:/root/.energicore3
+      - core-data:/home/nrgstaker/.energicore3
 
-secrets:
-  account_address:
-    file: ./configs/energi3_account_address
-  account_password:
-    file: ./configs/energi3_account_password
+volumes:
+  core-data:
