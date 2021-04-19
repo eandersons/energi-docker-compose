@@ -38,16 +38,19 @@ To run Energi Gen 3 Core Node in a Docker container:
     to use multiple accounts for staking each password must be entered in a separate line in the same order addresses are specified in `configs/energi3_account_address`;
 
   these files are used to get account's address and password to automatically unlock account for staking when launching Energi Gen 3 Core Node;
-- copy keystore file to `volumes/root/.energicore3/keystore`;
-- bootstrap chaindata and start the Energi Gen 3 Core Node container: `./bootstrap-chaindata.sh`;
-  > `bootstrap-chaindata.sh` should be made executable or it can be run using a shell binary (for example: `bash bootstrap-chaindata.sh`);
-  >
-  > `docker-compose run` is used in `bootstrap-chaindata.sh` so `sudo` might be necessary.
+- copy keystore file to `setup/.energicore3/keystore`;
+  > Note: a copy of keystore file should be stored in a safe place as the keystore file that will be placed in `setup/.energicore/keystore` will be moved to a Docker volume.
 - open the necessary ports for external inbound access in router and/or firewall:
   - `39797` TCP;
   - `39797` UDP;
 
-  `39797` TCP and UDP ports are required for staking and Masternode as it is mentioned [here (section "1.7. Firewall Rules")](https://docs.energi.software/en/advanced/core-node-vps#h-17-firewall-rules).
+  `39797` TCP and UDP ports are required for staking and Masternode as it is mentioned [here (section "1.7. Firewall Rules")](https://docs.energi.software/en/advanced/core-node-vps#h-17-firewall-rules);
+- to move keystore file to the Energi data directory volume, bootstrap chaindata and start the Energi Gen 3 Core Node container the following command should be executed: `./setup.sh`;
+  > `setup.sh` should be made executable or it can be run using a shell binary (for example: `[ba]sh setup.sh`);
+  >
+  > `docker-compose run` and `docker-compose up` is used in `setup.sh` so `sudo` might be necessary.
+
+The aforementioned actions must be executed only once - when running Energi Core Node coneainer for the first time. Later on container can be started with the command `docker-compose up --detach`.
 
 To check if Energi Gen 3 Core Node is running and account is unlocked for staking, execute the following commands:
 
@@ -56,7 +59,7 @@ To check if Energi Gen 3 Core Node is running and account is unlocked for stakin
 - `miner.stakingStatus()` will display staking status;
 
   values for `miner` and `staking` should be `true`;
-  if not, block synchronisation is in progress; it can be checked with the command in Energi Core Node console: `nrg.syncing`; when the output is `false`, check output of `miner.stakingStatus()` again.
+  if not, block synchronisation might be in progress; it can be checked with the command in Energi Core Node console: `nrg.syncing`; when the output is `false`, check output of `miner.stakingStatus()` again.
 
 ## Troubleshooting
 
@@ -78,7 +81,7 @@ Official Energi documentation: [Apply Preimages](https://docs.energi.software/en
 
 To apply preimages for Energi Gen 3 Core Node container the following command can be used: `./apply-preimages.sh`.
 
-> This script should be made executable or it can be executed with shell binary (for example: `bash apply-preimages.sh`).
+> This script should be made executable or it can be executed with shell binary (for example: `[ba]sh apply-preimages.sh`).
 >
 > In this script `docker-compose` is used so `sudo` might be necessary.
 
@@ -88,7 +91,7 @@ Official Energi documentation: [Bootstrap Chaindata](https://docs.energi.softwar
 
 To bootstrap chaindata for Energi Core Node container the following command can be used: `./bootstrap-chaindata.sh`.
 
-> This script should be made executable or it can be executed with shell binary (for example: `bash bootstrap-chaindata.sh`).
+> This script should be made executable or it can be executed with shell binary (for example: `[ba]sh bootstrap-chaindata.sh`).
 >
 > In this script `docker-compose` is used so `sudo` might be necessary.
 
@@ -96,9 +99,7 @@ To bootstrap chaindata for Energi Core Node container the following command can 
 
 Steps to update Energi Core Node container:
 
-1. stop and remove the Energi Core Node container:
-  `docker-compose down`;
-2. pull changes from repository:
+1. to pull changes from repository:
   `git pull`;
-3. build image and start the container:
-  `docker-compose up --build --detach`.
+2. to build image and recreate and run the container:
+  `docker-compose up --build --force-recreate --detach`.
