@@ -1,0 +1,8 @@
+/home/nrgstaker/logs/*.log {
+  su nrgstaker nrgstaker
+  rotate 3
+  minsize 25M
+  copytruncate
+  compress
+  missingok
+}

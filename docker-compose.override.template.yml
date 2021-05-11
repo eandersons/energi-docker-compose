@@ -1,0 +1,18 @@
+services:
+  monitor:
+    build: nodemon
+    depends_on:
+      - core
+    env_file: nodemon/.env
+    environment:
+      - TERM=xterm
+    image: energi-node-monitor:1.1.1-1.0.0
+    restart: unless-stopped
+    volumes:
+      - core-data:/home/nrgstaker/.energicore3
+      - monitor-data:/var/multi-masternode-data/nodebot
+      - monitor-logs:/home/nrgstaker/logs
+
+volumes:
+  monitor-data:
+  monitor-logs:
