@@ -46,6 +46,7 @@ To run Energi Gen 3 Core Node in a Docker container:
   - `39797` UDP;
 
   `39797` TCP and UDP ports are required for staking and Masternode as it is mentioned [here (section "1.7. Firewall Rules")](https://docs.energi.software/en/advanced/core-node-vps#h-17-firewall-rules);
+- optionally, to change the Docker Compose project name, `.env.template.env` should be copied and renamed to `env` and the value for [the CLI variable `COMPOSE_PROJECT_NAME`](https://docs.docker.com/compose/reference/envvars/#compose_project_name) should be changed to the desired value;
 - to move keystore file to the Energi data directory volume, bootstrap chaindata and start the Energi Gen 3 Core Node container the following command should be executed: `./setup.sh`;
   > `setup.sh` should be made executable or it can be run using a shell binary (for example: `[ba]sh setup.sh`);
   >
