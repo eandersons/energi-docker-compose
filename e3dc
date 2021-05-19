@@ -102,7 +102,7 @@ case "$1" in
     case $2 in
       '' | all ) ${update} ; exit $? ;;
       core ) ${update} core ; exit $? ;;
-      monitor ) ${update} monitor ; exit $? ;;
+      monitor ) ${update} --no-deps monitor ; exit $? ;;
       * )
         printf '`%b` is not a valid value for `update`.\n' $2
         printf '%b\n' "${service_options_message}"
