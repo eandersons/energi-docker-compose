@@ -13,12 +13,10 @@ Dockerised Energi Core Node Monitor for the dockerised Energi Core Node.
 
 To enable Energi Core Node Monitor, `docker-compose.override.template.yml` has to be copied in the root directory and renamed to `docker-compose.override.yml`. Then `nodemon/.env.template.env` must be copied and renamed to `.env` and values should be provided for environment variables when a non-interactive setup is used (`INTERACTIVE_SETUP=n`). All the environment variables are described in [the subsection below](#environment-variables).
 
-To setup Energi Core Node Monitor container, command `sh configure-nodemon.sh` must be executed from the root directory (where `docker-compose.yml` is located).
+To setup Energi Core Node Monitor container, command `./e3dc setup monitor` (or `./e3dc setup` if Energi Core Node and Energi Core Node Monitor are set up together) must be executed from the root directory (where `docker-compose.yml` is located). Energi Core Node Monitor container will be automatically started afterwards.
 
-> `docker-compose` is used in `configure-nodemon.sh` so `sudo` might be necessary.
-
-After the setup Energi Core Node Monitor container can be started with the command `docker-compose up --detach`.
-
+> `docker-compose` is used in `./e3dc setup` so `sudo` might be necessary.
+>
 > After the Energi Core Node Monitor container is launched for the first time or it is recreated, a message about user and group changes will be sent.
 
 ### Environment variables

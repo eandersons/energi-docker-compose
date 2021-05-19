@@ -1,0 +1,117 @@
+#!/bin/sh
+
+help_message="\
+e3dc - a helper command for \`energi3-docker-compose\`, a dockerised Energi Core
+Node.
+
+Available commands:
+    apply-preimages, preimages      Apply preimages
+    attach                          Attach to Energi console
+    bootstrap-chaindata, chaindata  Bootstrap chaindata
+    help                            Print this help message
+    setup [all|core|monitor]        Setup Energi Core Node container(s)
+    start [all|core|monitor]        Start Energi Core Node container(s);
+        this is a shortcut for \`docker-compose up --detach [core|monitor]\`
+    status                          Energi Core Node synchronisation and staking
+        status
+    update [all|core|monitor]       Update image(s) and recreate container(s)
+
+Available options:
+    -?, -h, --help  Print this help message
+\n"
+service_options_message="Valid options are:\
+ no value or \`all\`; \`core\`; \`monitor\`."
+exec='docker-compose exec'
+run='docker-compose run --rm'
+start='docker-compose start'
+stop='docker-compose stop'
+up='docker-compose up --detach'
+
+function bootstrap_chaindata {
+  ${run} --entrypoint '/bin/sh bootstrap-chaindata.sh' core
+}
+
+function setup_core {
+  ${run}\
+    --entrypoint '/bin/sh /setup/setup.sh'\
+    --user=root\
+    --volume="${PWD}/setup:/setup"\
+    core && bootstrap_chaindata
+}
+
+function setup_monitor {
+  ${run} --entrypoint='/bin/bash nodemon.sh' --user=root monitor
+}
+
+case "$1" in
+  '' )
+    printf 'No command or option was provided!\n\n'
+    printf '%b' "${help_message}"
+
+    exit 1 ;;
+  -? | -h | --help | help ) printf '%b' "${help_message}" ; exit 0 ;;
+  apply-preimages | preimages )
+    ${stop}
+    exit_code=$?
+    ${run} --entrypoint '/bin/sh apply-preimages.sh' core
+    exit_code=`expr $exit_code + $?`
+    ${up}
+    exit_code=`expr $exit_code + $?`
+
+    exit ${exit_code} ;;
+  attach )
+    ${exec} core energi3 --datadir /home/nrgstaker/.energicore3 attach
+
+    exit $? ;;
+  bootstrap-chaindata | chaindata )
+    ${stop}
+    exit_code=$?
+    bootstrap_chaindata && ${up}
+    exit_code=`expr $exit_code + $?`
+
+    exit exit_code ;;
+  setup )
+    case $2 in
+      '' | all )
+        setup_core && ${up} core && setup_monitor && ${up} monitor
+
+        exit $? ;;
+      core ) setup_core && ${up} core ; exit $? ;;
+      monitor ) setup_monitor && ${up} monitor ; exit $? ;;
+      * )
+        printf '`%b` is not a valid value for `setup`.\n' $2
+        printf '%b\n' "${service_options_message}"
+
+        exit 1
+    esac ;;
+  start )
+    case $2 in
+      '' | all ) ${up} ; exit $? ;;
+      core ) ${up} core ; exit $? ;;
+      monitor ) ${up} monitor ; exit $? ;;
+      * )
+        printf '`%b` is not a valid value for `start`.\n' $2
+        printf '%b\n' "${service_options_message}"
+
+        exit 1
+    esac ;;
+  status ) ${exec} core sh energi-core-node-status.sh ; exit $? ;;
+  update )
+    git pull
+    update="${up} --build --force-recreate"
+    case $2 in
+      '' | all ) ${update} ; exit $? ;;
+      core ) ${update} core ; exit $? ;;
+      monitor ) ${update} monitor ; exit $? ;;
+      * )
+        printf '`%b` is not a valid value for `update`.\n' $2
+        printf '%b\n' "${service_options_message}"
+
+        exit 1
+    esac ;;
+  * )
+    printf "\`${1}\` is not a valid subcommand!\n\n"
+    printf '%b' "${help_message}"
+
+    exit 1
+esac
