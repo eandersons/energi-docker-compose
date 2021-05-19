@@ -9,7 +9,7 @@ secrets:
 services:
   core:
     build: .
-    image: energi-container:3.0.8-1.0.0
+    image: energi-core:3.0.8-1.0.0
     ports:
       - 39797:39797/tcp
       - 39797:39797/udp
