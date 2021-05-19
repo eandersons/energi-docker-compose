@@ -27,11 +27,11 @@ start='docker-compose start'
 stop='docker-compose stop'
 up='docker-compose up --detach'
 
-function bootstrap_chaindata {
+bootstrap_chaindata () {
   ${run} --entrypoint '/bin/sh bootstrap-chaindata.sh' core
 }
 
-function setup_core {
+setup_core () {
   ${run}\
     --entrypoint '/bin/sh /setup/setup.sh'\
     --user=root\
@@ -39,7 +39,7 @@ function setup_core {
     core && bootstrap_chaindata
 }
 
-function setup_monitor {
+setup_monitor () {
   ${run} --entrypoint='/bin/bash nodemon.sh' --user=root monitor
 }
 
