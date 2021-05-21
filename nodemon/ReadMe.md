@@ -18,6 +18,8 @@ To setup Energi Core Node Monitor container, command `./e3dc setup monitor` (or 
 > `docker-compose` is used in `./e3dc setup` so `sudo` might be necessary.
 >
 > After the Energi Core Node Monitor container is launched for the first time or it is recreated, a message about user and group changes will be sent.
+>
+> A note on uptime value in informational messages. As originally `nodemon.sh` is intended to run on the same server as Energi Core Node, then uptime value is meant to be the uptime of Core. In `energi3-docker-compose` this value is the uptime of the cron process in the Energi Core Node Monitor container as Core and Monitor run in separate Docker containers.
 
 ### Environment variables
 

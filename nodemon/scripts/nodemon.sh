@@ -2497,7 +2497,10 @@ Uptime: $( DISPLAYTIME "${UPTIME}" )"
   CONF_FOLDER=$( dirname "${CONF_LOCATION}" )
   DAEMON_BIN=energi3
   CONTROLLER_BIN="${DAEMON_BIN}"
-  DAEMON_PID=$( ps -ef | grep energi3 | grep -v "grep energi3" | grep -v "grep --color=auto energi3" | grep -v "attach" | awk '{print $2}' )
+  #+ Modified for `energi3-docker-compose`.
+  #|DAEMON_PID=$( ps -ef | grep energi3 | grep -v "grep energi3" | grep -v "grep --color=auto energi3" | grep -v "attach" | awk '{print $2}' )
+  DAEMON_PID=$( ps -ef | grep nodemon_cron.sh | grep -v "grep nodemon_cron.sh" | grep -v "grep --color=auto nodemon_cron.sh" | grep -v "attach" | awk '{print $2}' )
+  #+/ End of modification for `energi3-docker-compose`.
 
   # Get path to daemon bin.
   if [[ ! -z "${DAEMON_PID}" ]]
