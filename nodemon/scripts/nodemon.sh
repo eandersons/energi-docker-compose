@@ -2646,7 +2646,8 @@ Uptime: $( DISPLAYTIME "${UPTIME}" )"
   CHAT_ID=$( SQL_QUERY "SELECT value FROM variables WHERE key = 'telegram_chatid';" )
   #+ Modified for `energi3-docker-compose`.
   #|if [[ ! -z "${DISCORD_WEBHOOK_URL}" ]]
-  if [[ ( "${INTERACTIVE}" == 'n' && -z "${TELEGRAM_BOT_TOKEN}" ) || -n "${DISCORD_WEBHOOK_URL}" ]]
+  if [[ ( "${INTERACTIVE}" == 'n' && -z "${TELEGRAM_BOT_TOKEN}" )\
+  || ( "${INTERACTIVE}" == 'y' && -n "${DISCORD_WEBHOOK_URL}" ) ]]
   #+/ End of `energi3-docker-compose` modification.
   then
     REPLY='n'
