@@ -97,7 +97,7 @@ function CTRL_C () {
 
  #+ Modified for `energi3-docker-compose`.
  #|if [[ -z "${CURRENCY}" ]]
- if [[ -z "${CURRENCY:=ECNM_CURRENCY}" ]]
+ if [[ -z "${CURRENCY:=$ECNM_CURRENCY}" ]]
  #+/ End of `energi3-docker-compose` modification.
  then
    CURRENCY=USD
