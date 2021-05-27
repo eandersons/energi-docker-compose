@@ -92,7 +92,7 @@ function CTRL_C () {
  MNTOTALNRG=0
  USRNAME=$( find /home -name nodekey  2>&1 | grep -v "Permission denied" | awk -F\/ '{print $3}' )
  export PATH=$PATH:/home/${USRNAME}/energi3/bin
- LOGDIR="/home/${USRNAME}/log"
+ LOGDIR="/home/${USRNAME}/logs"
  LOGFILE="${LOGDIR}/nodemon.log"
 
  #+ Modified for `energi3-docker-compose`.
