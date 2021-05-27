@@ -1,6 +1,6 @@
-/home/nrgstaker/logs/*.log {
+/home/nrgstaker/log/*.log {
   su nrgstaker nrgstaker
-  rotate 3
+  rotate 4
   minsize 25M
   copytruncate
   compress

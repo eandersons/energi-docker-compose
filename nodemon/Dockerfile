@@ -6,7 +6,7 @@ ENV ECNM_DATA_DIR=/var/multi-masternode-data/nodebot
 ENV USER_AND_GROUP_ID=1000
 ENV USERNAME=nrgstaker
 ENV USER_HOME=/home/${USERNAME}
-ENV NODEMON_LOG_DIR=${USER_HOME}/logs
+ENV NODEMON_LOG_DIR=${USER_HOME}/log
 
 RUN DEBIAN_FRONTEND=noninteractive\
  apt-get update --quiet && apt-get upgrade --assume-yes --quiet &&\

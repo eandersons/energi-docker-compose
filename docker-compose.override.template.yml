@@ -6,12 +6,12 @@ services:
     env_file: nodemon/.env
     environment:
       - TERM=xterm
-    image: energi-nodemon:1.1.1-1.0.1
+    image: energi-nodemon:1.1.1-1.0.2
     restart: unless-stopped
     volumes:
       - core-data:/home/nrgstaker/.energicore3
       - monitor-data:/var/multi-masternode-data/nodebot
-      - monitor-logs:/home/nrgstaker/logs
+      - monitor-logs:/home/nrgstaker/log
 
 volumes:
   monitor-data:
