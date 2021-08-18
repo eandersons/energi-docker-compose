@@ -1,4 +1,4 @@
-FROM energicryptocurrency/energi3:v3.0.8
+FROM energicryptocurrency/energi3:v3.1.0
 
 ENV USER_AND_GROUP_ID=1000
 ENV USERNAME=nrgstaker
