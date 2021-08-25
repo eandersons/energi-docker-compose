@@ -1,12 +1,23 @@
-# `ubuntu:latest` means "the latest Ubuntu LTS release"
+# Build the binary `energi3` in a stock Go builder container
+FROM golang:1.15-buster as energi3-builder
+
+RUN apt-get update\
+ && apt-get install --assume-yes --no-install-recommends --quiet musl-dev\
+ && apt-get clean;\
+ git clone --branch v3.1.0 --depth 1\
+  https://github.com/energicryptocurrency/energi3.git energi3\
+ && cd energi3 && make geth
+
+
+# `ubuntu:latest` means "The latest Ubuntu LTS release"
 # https://hub.docker.com/_/ubuntu
 FROM ubuntu:latest
 
-ENV ECNM_DATA_DIR=/var/multi-masternode-data/nodebot
-ENV USER_AND_GROUP_ID=1000
-ENV USERNAME=nrgstaker
-ENV USER_HOME=/home/${USERNAME}
-ENV NODEMON_LOG_DIR=${USER_HOME}/log
+ARG ECNM_DATA_DIR=/var/multi-masternode-data/nodebot
+ARG USER_AND_GROUP_ID=1000
+ARG USERNAME=nrgstaker
+ARG USER_HOME=/home/${USERNAME}
+ARG NODEMON_LOG_DIR=${USER_HOME}/log
 
 RUN DEBIAN_FRONTEND=noninteractive\
  apt-get update --quiet && apt-get upgrade --assume-yes --quiet &&\
@@ -27,7 +38,7 @@ RUN DEBIAN_FRONTEND=noninteractive\
  chown --recursive ${USERNAME}:${USERNAME} ${NODEMON_LOG_DIR};\
  touch /var/log/auth.log; touch /var/log/kern.log
 
-COPY [ "bin/energi3", "/usr/local/bin/" ]
+COPY --from=energi3-builder [ "/go/energi3/build/bin/energi3", "/usr/local/bin/" ]
 RUN [ "chmod", "+x", "/usr/local/bin/energi3" ]
 
 COPY [ "etc", "/etc" ]
