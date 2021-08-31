@@ -1,117 +1,298 @@
 #!/bin/sh
 
+command_pattern_attach='attach'
+command_pattern_chaindata='bootstrap-chaindata | chaindata'
+service_choices='core | monitor'
+command_pattern_console="console | shell | terminal ${service_choices}"
+command_pattern_preimages='apply-preimages | preimages'
+service_pattern="all | ${service_choices}"
+command_pattern_update="update [${service_pattern}] [<version>]"
+command_pattern_setup="setup [${service_pattern}]"
+command_pattern_start="start [${service_pattern}]"
+command_pattern_status='staking-status | status'
+env='.env'
+env_template='.env.template.env'
+help_description='Print this help message'
 help_message="\
 e3dc - a helper command for \`energi3-docker-compose\`, a dockerised Energi Core
 Node.
 
 Available commands:
-    apply-preimages, preimages      Apply preimages
-    attach                          Attach to Energi console
-    bootstrap-chaindata, chaindata  Bootstrap chaindata
-    help                            Print this help message
-    setup [all|core|monitor]        Setup Energi Core Node container(s)
-    start [all|core|monitor]        Start Energi Core Node container(s);
-        this is a shortcut for \`docker-compose up --detach [core|monitor]\`
-    status                          Energi Core Node synchronisation and staking
-        status
-    update [all|core|monitor]       Update image(s) and recreate container(s)
+    ${command_pattern_preimages}
+        Apply Energi Core Node preimages
+    ${command_pattern_attach}
+        Attach to the Energi Core Node console
+    ${command_pattern_chaindata}
+        Bootstrap Energi Core Node chaindata
+    ${command_pattern_console}
+        Attach to Energi Core Node or Monitor container
+    help
+        ${help_description}
+    ${command_pattern_setup}
+        Setup Energi Core Node container(s)
+    ${command_pattern_start}
+        Start Energi Core Node container(s); this is a shortcut for
+        \`docker-compose up --detach [${service_choices}]\`
+    ${command_pattern_status}
+        Energi Core Node synchronisation and staking status
+    ${command_pattern_update}
+        Update image(s) and recreate container(s).
+        Version argument (i.e. v3.1.0) can be used to build images and create
+        containers with \`energi3\` version other than the one that is specified
+        in \`${env_template}\`
 
 Available options:
-    -?, -h, --help  Print this help message
-\n"
-service_options_message="Valid options are:\
- no value or \`all\`; \`core\`; \`monitor\`."
+    -?, -h, --help
+        ${help_description}
+"
+service_arguments_message='Valid arguments are:
+  - no value or `all`;
+  - `core`;
+  - `monitor`.'
 exec='docker-compose exec'
 run='docker-compose run --rm'
 start='docker-compose start'
 stop='docker-compose stop'
 up='docker-compose up --detach'
 
-bootstrap_chaindata () {
+bootstrap_chaindata() {
   ${run} --entrypoint '/bin/sh bootstrap-chaindata.sh' core
 }
 
-setup_core () {
-  ${run}\
-    --entrypoint '/bin/sh /setup/setup.sh'\
-    --user=root\
-    --volume="${PWD}/setup:/setup"\
-    core && bootstrap_chaindata
-}
+check_max_arguments_count() {
+  count=${1}
+  max=${2}
+  pattern=${3}
 
-setup_monitor () {
-  ${run} --entrypoint='/bin/bash nodemon.sh' --user=root monitor
-}
+  if [ ${count} -gt ${max} ]; then
+    printf '%s\n' 'Too much arguments!'
 
-case "$1" in
-  '' )
-    printf 'No command or option was provided!\n\n'
-    printf '%b' "${help_message}"
-
-    exit 1 ;;
-  -? | -h | --help | help ) printf '%b' "${help_message}" ; exit 0 ;;
-  apply-preimages | preimages )
-    ${stop}
-    exit_code=$?
-    ${run} --entrypoint '/bin/sh apply-preimages.sh' core
-    exit_code=`expr $exit_code + $?`
-    ${up}
-    exit_code=`expr $exit_code + $?`
-
-    exit ${exit_code} ;;
-  attach )
-    ${exec} core energi3 --datadir /home/nrgstaker/.energicore3 attach
-
-    exit $? ;;
-  bootstrap-chaindata | chaindata )
-    ${stop}
-    exit_code=$?
-    bootstrap_chaindata && ${up}
-    exit_code=`expr $exit_code + $?`
-
-    exit exit_code ;;
-  setup )
-    case $2 in
-      '' | all )
-        setup_core && ${up} core && setup_monitor && ${up} monitor
-
-        exit $? ;;
-      core ) setup_core && ${up} core ; exit $? ;;
-      monitor ) setup_monitor && ${up} monitor ; exit $? ;;
-      * )
-        printf '`%b` is not a valid value for `setup`.\n' $2
-        printf '%b\n' "${service_options_message}"
-
-        exit 1
-    esac ;;
-  start )
-    case $2 in
-      '' | all ) ${up} ; exit $? ;;
-      core ) ${up} core ; exit $? ;;
-      monitor ) ${up} monitor ; exit $? ;;
-      * )
-        printf '`%b` is not a valid value for `start`.\n' $2
-        printf '%b\n' "${service_options_message}"
-
-        exit 1
-    esac ;;
-  status ) ${exec} core sh energi-core-node-status.sh ; exit $? ;;
-  update )
-    git pull
-    update="${up} --build --force-recreate"
-    case $2 in
-      '' | all ) ${update} ; exit $? ;;
-      core ) ${update} core ; exit $? ;;
-      monitor ) ${update} --no-deps monitor ; exit $? ;;
-      * )
-        printf '`%b` is not a valid value for `update`.\n' $2
-        printf '%b\n' "${service_options_message}"
-
-        exit 1
-    esac ;;
-  * )
-    printf "\`${1}\` is not a valid subcommand!\n\n"
-    printf '%b' "${help_message}"
+    if [ -n "${pattern}" ] && [ "${pattern}" != '' ]; then
+      printf "Subcommand's pattern is: %s\n" "${pattern}"
+    fi
 
     exit 1
+  fi
+}
+
+check_env() {
+  if [ ! -s ${env} ]; then
+    printf '`%s` does not exist or is empty. Creating it from `%s`.\n' \
+      ${env} ${env_template}
+    cat ${env_template} >${env}
+  fi
+}
+
+print_help_message() {
+  printf '%b' "\n${help_message}\n"
+}
+
+case "${1}" in
+'')
+  printf 'No command or option was provided!\n'
+  print_help_message
+
+  exit 1
+  ;;
+-? | -h | --help | help)
+  check_max_arguments_count ${#} 1 '-? | -h | --help | help'
+  print_help_message
+
+  exit 0
+  ;;
+apply-preimages | preimages)
+  check_max_arguments_count ${#} 1 "${command_pattern_preimages}"
+  check_env
+  ${stop}
+  exit_code=${?}
+  ${run} --entrypoint '/bin/sh apply-preimages.sh' core
+  exit_code=$(expr ${exit_code} + ${?})
+  ${up}
+  exit_code=$(expr ${exit_code} + ${?})
+
+  exit ${exit_code}
+  ;;
+attach)
+  check_max_arguments_count ${#} 1 "${command_pattern_attach}"
+  check_env
+  ${exec} core energi3 --datadir /home/nrgstaker/.energicore3 attach
+
+  exit ${?}
+  ;;
+bootstrap-chaindata | chaindata)
+  check_max_arguments_count ${#} 1 "${command_pattern_chaindata}"
+  check_env
+  ${stop}
+  exit_code=${?}
+  bootstrap_chaindata && ${up}
+  exit_code=$(expr $exit_code + ${?})
+
+  exit ${exit_code}
+  ;;
+console | shell | terminal)
+  check_max_arguments_count ${#} 2 "${command_pattern_console}"
+
+  if [ -z ${2} ] || [ "${2}" = '' ]; then
+    printf 'Service name (%s) is not provided!\n' "${service_choices}"
+
+    exit 1
+  fi
+
+  check_env
+
+  case "${2}" in
+  core)
+    ${exec} core /bin/sh
+
+    exit ${?}
+    ;;
+  monitor)
+    ${exec} monitor /bin/bash
+
+    exit ${?}
+    ;;
+  *)
+    printf '`%s` is not a valid service name!\n' ${2}
+    printf 'Valid options are: %s.\n' "${service_choices}"
+
+    exit 1
+    ;;
+  esac
+  ;;
+setup)
+  setup_monitor() {
+    ${run} --entrypoint='/bin/bash nodemon.sh' --user=root monitor
+  }
+
+  setup_core() {
+    ${run} \
+      --entrypoint '/bin/sh /setup/setup.sh' \
+      --user=root --volume="${PWD}/setup:/setup" \
+      core && bootstrap_chaindata
+  }
+
+  check_max_arguments_count ${#} 2 "${command_pattern_setup}"
+  check_env
+
+  case "${2}" in
+  '' | all)
+    setup_core && ${up} core && setup_monitor && ${up} monitor
+
+    exit ${?}
+    ;;
+  core)
+    setup_core && ${up} core
+
+    exit ${?}
+    ;;
+  monitor)
+    setup_monitor && ${up} monitor
+
+    exit ${?}
+    ;;
+  *)
+    printf '`%s` is not a valid argument for the subcommand `setup`.\n' ${2}
+    printf '%s\n' "${service_arguments_message}"
+
+    exit 1
+    ;;
+  esac
+  ;;
+start)
+  check_max_arguments_count ${#} 2 "${command_pattern_start}"
+  check_env
+
+  case "${2}" in
+  '' | all)
+    ${up}
+
+    exit ${?}
+    ;;
+  core)
+    ${up} core
+
+    exit ${?}
+    ;;
+  monitor)
+    ${up} monitor
+    exit ${?}
+    ;;
+  *)
+    printf '`%b` is not a valid argument for the subcommand `start`.\n' "${2}"
+    printf '%b\n' "${service_arguments_message}"
+
+    exit 1
+    ;;
+  esac
+  ;;
+staking-status | status)
+  check_max_arguments_count ${#} 1 "${command_pattern_status}"
+  check_env
+  ${exec} core sh energi-core-node-status.sh
+  exit ${?}
+  ;;
+update)
+  version_from_env() {
+    env=${1}
+    sed -n "s/${pattern_version_env}/\1/p" ${env}
+  }
+
+  case "${2}" in
+  all | core | monitor)
+    check_max_arguments_count ${#} 3 "${command_pattern_update}"
+    ;;
+  *) check_max_arguments_count ${#} 2 "${command_pattern_update}" ;;
+  esac
+
+  pattern_key='ENERGI_VERSION='
+  pattern_version='v[0-9]\+\.[0-9]\+\.[0-9]\+'
+  pattern_version_env="^${pattern_key}\(${pattern_version}\)$"
+  update="${up} --build"
+  command="${update}"
+  git pull
+
+  case "${2}" in
+  core) command="${update} core" ;;
+  monitor) command="${update} --no-deps monitor" ;;
+  esac
+
+  for last_argument in "${@}"; do :; done
+
+  case "${last_argument}" in
+  '' | all | core | monitor | update)
+    version=$(version_from_env ${env_template})
+    ;;
+  *)
+    version=$(printf '%s' ${last_argument} | grep ${pattern_version})
+
+    if [ -z ${version} ] || [ "${version}" = '' ]; then
+      printf 'Invalid version format!\n'
+      printf 'Version must be formatted like vX.Y.Z (for example: v3.1.0).\n'
+      printf 'Version provided: %s\n' "${last_argument}"
+
+      exit 1
+    fi
+    ;;
+  esac
+
+  check_env
+  current_version=$(version_from_env ${env})
+
+  if [ "${version}" != "${current_version}" ]; then
+    printf 'Current version %s differs from the provided one: %s.\n' \
+      "${current_version}" "${version}"
+    printf 'Updating it in `%s`.\n' ${env}
+    sed -i "s/^\(${pattern_key}\)${pattern_version}$/\1${version}/" ${env}
+  fi
+
+  ${command}
+
+  exit ${?}
+  ;;
+*)
+  printf '`%s` is not a valid subcommand!\n' "${1}"
+  print_help_message
+
+  exit 1
+  ;;
 esac

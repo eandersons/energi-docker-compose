@@ -1,4 +1,4 @@
-version: "3.8"
+version: '3.8'
 
 secrets:
   account_address:
@@ -8,8 +8,12 @@ secrets:
 
 services:
   core:
-    build: .
-    image: energi-core:3.1.0-0.0
+    build:
+      args:
+        ENERGI_VERSION:
+          ${ENERGI_VERSION:?"`ENERGI_VERSION` must be set in `.env`!"}
+      context: .
+    image: energi-core:${ENERGI_VERSION}-0.0
     ports:
       - 39797:39797/tcp
       - 39797:39797/udp
