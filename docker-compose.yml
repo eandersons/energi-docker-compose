@@ -2,9 +2,9 @@ version: '3.8'
 
 secrets:
   account_address:
-    file: ./configs/energi3_account_address
+    file: ./configuration/energi3_account_address
   account_password:
-    file: ./configs/energi3_account_password
+    file: ./configuration/energi3_account_password
 
 services:
   core:
