@@ -67,8 +67,7 @@ NODEMONVER=1.1.2
 
 function CTRL_C () {
   stty sane 2>/dev/null
-  printf "\e[0m"
-  echo
+  printf '\e[0m\n'
   exit
 
 }
@@ -421,16 +420,13 @@ energi3 1 2.28 0.914 101 3600 0.000001 NRG 60
   (( S > 0 )) && printf '%d sec ' "${S}"
 }
 
- # Check if FIRST version is greater than SECOND version
- _version_gt() {
-
+# Check if FIRST version is greater than SECOND version
+_version_gt() {
    test "$(printf '%s\n' "$@" | sort -V | head -n 1)" != "$1";
-
 }
 
- # Create a service that runs every minute.
- INSTALL_NODEMON_SERVICE () {
-
+# Create a service that runs every minute.
+INSTALL_NODEMON_SERVICE () {
   # Install nodemon.sh
   INSTALL_VER=$( /var/multi-masternode-data/nodebot/nodemon.sh version | awk '{print $2}' )
   if [[ -f "${HOME}/energi3/bin/nodemon.sh" ]]
@@ -896,12 +892,10 @@ echo ${_PAYLOAD}
     TEXT_B="Replace"
   fi
 
-  # Modified for `energi3-docker-compose`.
-  #|read -p "${TEXT_B} Telegram Token [${TOKEN}]: " -r
-  echo "${TEXT_B} Telegram Token [${TOKEN}]: "
-  override_read ${TOKEN:-${TELEGRAM_BOT_TOKEN}}
-  # End of `energi3-docker-compose` modification.
-  if [[ ! -z "${REPLY}" ]]
+  printf '%sTelegram Token [%s]: \n' "${TEXT_B}" "${TOKEN}"
+  override_read "${TOKEN:-${TELEGRAM_BOT_TOKEN}}"
+
+  if [[ -n "${REPLY}" ]]
   then
     TOKEN="${REPLY}"
   fi
@@ -1804,22 +1798,22 @@ ${RKHUNTER_OUTPUT}"
   SQL_QUERY "REPLACE INTO variables (key,value) VALUES ('rkhunter_last_run','${UNIX_TIME}');"
 }
 
- REPORT_INFO_ABOUT_NODE () {
-  USRNAME=$( echo "${1}" | tr -d \" )
-  DAEMON_BIN=$( echo "${2}" | tr -d \" )
-  DATADIR=$( echo "${3}" | tr -d \" )
-  MASTERNODE=$( echo "${4}" | tr -d \" )
-  MNINFO=$( echo "${5}" | tr -d \" )
-  GETBALANCE=$( echo "${6}" | tr -d \" )
-  GETTOTALBALANCE=$( echo "${7}" | tr -d \" )
-  STAKING=$( echo "${8}" | tr -d \" )
-  GETCONNECTIONCOUNT=$( echo "${9}" | tr -d \" )
-  GETBLOCKCOUNT=$( echo "${10}" | tr -d \" )
-  UPTIME=$( echo "${11}" | tr -d \" )
-  DAEMON_PID=$( echo "${12}" | tr -d \" )
-  NETWORKHASHPS=$( echo "${13}" | tr -d \" )
-  MNWIN=$( echo "${14}" | tr -d \" )
-  VERSION=$( echo "${15}" | tr -d \" )
+REPORT_INFO_ABOUT_NODE () {
+  USRNAME=${1}
+  DAEMON_BIN=${2}
+  DATADIR=${3}
+  MASTERNODE=${4}
+  MNINFO=${5}
+  GETBALANCE=${6}
+  GETTOTALBALANCE=${7}
+  GETCONNECTIONCOUNT=${8}
+  GETBLOCKCOUNT=${9}
+  UPTIME=${10}
+  UPTIME_MONITOR=${11}
+  DAEMON_PID=${12}
+  NETWORKHASHPS=${13}
+  MNWIN=${14}
+  VERSION=${15}
 
   if [[ -z "${USRNAME}" ]]
   then
@@ -2166,7 +2160,6 @@ ${_MNREWARDS}"
   GETTOTALBALANCE=$( echo "$GETBALANCE + $MNCOLLATERAL" | bc -l | sed '/\./ s/\.\{0,1\}0\{1,\}$//' )
 
   # Check staking status.
-  STAKING=0
   STAKING_TEXT='Disabled'
   GETSTAKINGSTATUS="false"
   if [[ $( echo "${GETBALANCE} >= 1" | bc -l ) -gt 0 ]]
@@ -2226,8 +2219,7 @@ Masternode is Active and Alive!" "Masternode Alive" "${DISCORD_WEBHOOK_USERNAME}
   then
     PAST_UPTIME="${UPTIME}"
   fi
-  echo "uptime: ${UPTIME}
-past uptime: ${PAST_UPTIME}"
+
   if [[ "${UPTIME}" -lt "${PAST_UPTIME}" ]]
   then
     PAST_UPTIME_HUMAN=$( DISPLAYTIME "${PAST_UPTIME}" )
@@ -2245,7 +2237,40 @@ Past uptime: ${PAST_UPTIME_HUMAN}
 New uptime: ${UPTIME_HUMAN}" "" "${DISCORD_WEBHOOK_USERNAME}" "${DISCORD_WEBHOOK_AVATAR}"
     fi
   fi
-  SQL_QUERY "REPLACE INTO variables (key,value) VALUES ('${DATADIR}:uptime','${UPTIME}');"
+
+  PAST_UPTIME_MONITOR=$( SQL_QUERY \
+    "SELECT value FROM variables WHERE key = '${DATADIR}:uptime-monitor';" )
+
+  if [[ -z "${PAST_UPTIME_MONITOR}" ]]
+  then
+    PAST_UPTIME_MONITOR=${UPTIME_MONITOR}
+  fi
+
+  if [[ "${UPTIME_MONITOR}" -lt "${PAST_UPTIME_MONITOR}" ]]
+  then
+    if [[ "${PAST_UPTIME_MONITOR}" -lt 300 ]]
+    then
+      function='SEND_ERROR'
+      message='Node Monitor was restarted mutiple times in the last 5 minutes'
+    else
+      function='SEND_WARNING'
+      message='Node Monitor was restarted'
+    fi
+
+    ${function} \
+      "$( printf '%s\n%s\nPast uptime: %s\nNew uptime: %s' \
+        "__${USRNAME} ${DAEMON_BIN}__" \
+        "${message}" \
+        "$( DISPLAYTIME "${PAST_UPTIME_MONITOR}" )" \
+        "$( DISPLAYTIME "${UPTIME_MONITOR}" )" )" \
+      "" \
+      "${DISCORD_WEBHOOK_USERNAME}" \
+      "${DISCORD_WEBHOOK_AVATAR}"
+  fi
+
+  SQL_QUERY "REPLACE INTO variables (key, value) \
+    VALUES ('${DATADIR}:uptime', '${UPTIME}'), \
+    ('${DATADIR}:uptime-monitor', '${UPTIME_MONITOR}');"
 
   # Update & report on balance.
   PAST_BALANCE=$( SQL_QUERY "SELECT value FROM variables WHERE key = '${DATADIR}:balance';" )
@@ -2382,28 +2407,37 @@ Upgrade REQUIRED. Installed Version: ${VERSION}. Git Version: ${GIT_LATEST}" "Up
 Running most recent version: ${VERSION}" "Node version current" "${DISCORD_WEBHOOK_USERNAME}" "${DISCORD_WEBHOOK_AVATAR}"
   fi
 
-  _PAYLOAD="__${USRNAME} ${DAEMON_BIN}__
-Block Height: ${GETBLOCKCOUNT}
-Connections: ${GETCONNECTIONCOUNT}
-Staking Status: ${STAKING_TEXT}
-Masternode Status: ${MASTERNODE_TEXT}
-Upgrade Required: ${UPGRADE_TEXT}
-PID: ${DAEMON_PID}
-Uptime: $( DISPLAYTIME "${UPTIME}" )"
-
-  PROCESS_NODE_MESSAGES "${DATADIR}" "node_info" "3" "${_PAYLOAD}" "" "${DISCORD_WEBHOOK_USERNAME}" "${DISCORD_WEBHOOK_AVATAR}"
+  _PAYLOAD="$( printf '%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s' \
+    "__${USRNAME} ${DAEMON_BIN}__" \
+    "Block Height: ${GETBLOCKCOUNT}" \
+    "Connections: ${GETCONNECTIONCOUNT}" \
+    "Staking Status: ${STAKING_TEXT}" \
+    "Masternode Status: ${MASTERNODE_TEXT}" \
+    "Upgrade Required: ${UPGRADE_TEXT}" \
+    "PID: ${DAEMON_PID}" \
+    "Uptime: $( DISPLAYTIME "${UPTIME}" )" \
+    "Monitor uptime: $( DISPLAYTIME "${UPTIME_MONITOR}" )" )"
+  PROCESS_NODE_MESSAGES \
+    "${DATADIR}" \
+    'node_info' \
+    3 \
+    "${_PAYLOAD}" \
+    '' \
+    "${DISCORD_WEBHOOK_USERNAME}" \
+    "${DISCORD_WEBHOOK_AVATAR}"
 }
 
- GET_INFO_ON_THIS_NODE () {
+GET_INFO_ON_THIS_NODE () {
   USRNAME=${1}
   BIN_LOC=${2}
   DAEMON_BIN=${3}
   DATADIR=${4}
   DAEMON_PID=${5}
   UPTIME=${6}
-
+  UPTIME_MONITOR=${7}
   GETBALANCE=0
   GETTOTALBALANCE=0
+
   # is the daemon running.
   if [[ -z "${DAEMON_PID}" ]]
   then
@@ -2454,7 +2488,22 @@ Uptime: $( DISPLAYTIME "${UPTIME}" )"
   fi
 
   # Output info.
-  REPORT_INFO_ABOUT_NODE "${USRNAME}" "${DAEMON_BIN}" "${DATADIR}" "0" "0" "${GETBALANCE}" "${GETTOTALBALANCE}" "${STAKING}" "${GETCONNECTIONCOUNT}" "${GETBLOCKCOUNT}" "${UPTIME}" "${DAEMON_PID}" "${GETNETHASHRATE}" "${MNWIN}" "${VERSION}"
+  REPORT_INFO_ABOUT_NODE \
+    "${USRNAME}" \
+    "${DAEMON_BIN}" \
+    "${DATADIR}" \
+    0 \
+    0 \
+    "${GETBALANCE}" \
+    "${GETTOTALBALANCE}" \
+    "${GETCONNECTIONCOUNT}" \
+    "${GETBLOCKCOUNT}" \
+    "${UPTIME}" \
+    "${UPTIME_MONITOR}" \
+    "${DAEMON_PID}" \
+    "${GETNETHASHRATE}" \
+    "${MNWIN}" \
+    "${VERSION}"
 }
 
  GET_NODE_INFO () {
@@ -2506,7 +2555,7 @@ Uptime: $( DISPLAYTIME "${UPTIME}" )"
   # Get path to daemon bin.
   if [[ ! -z "${DAEMON_PID}" ]]
   then
-    DAEMON_BIN_LOC=$( ps -ef | grep energi3 | grep -v "grep energi3" | grep -v "grep --color=auto energi3" | grep -v "attach" | awk '{print $8}' )
+    DAEMON_BIN_LOC=$( which "${DAEMON_BIN}" )
     CONTROLLER_BIN_LOC="${DATADIR}"
     COMMAND_FOLDER=$( dirname "${DAEMON_BIN_LOC}" )
     CONTROLLER_BIN_FOLDER=$( find "${COMMAND_FOLDER}" -executable -type f 2>/dev/null | grep -Ei "${DAEMON_BIN}$" )
@@ -2518,38 +2567,58 @@ Uptime: $( DISPLAYTIME "${UPTIME}" )"
   CONF_LOCATION=${CONTROLLER_BIN_LOC}
 
   UPTIME=0
-  if [[ ! -z "${DAEMON_PID}" ]]
+  if [[ -n "${DAEMON_PID}" ]]
   then
-    # Get list of processes with uptimes (etimes)
-    PS_LIST=$( ps --no-headers -axo user:32,pid,etimes,command )
-    UPTIME=$( echo "${PS_LIST}" | cut -c 32- | grep " ${DAEMON_PID} " | awk '{print $2}' | head -n 1 | awk '{print $1}' | grep -o '[0-9].*' )
+    uptime () {
+      ps_list=${1}
+      daemon_pid=${2}
+      printf '%s' "$( printf '%s' "${ps_list}" \
+        | cut -c 32- \
+        | grep " ${daemon_pid} " \
+        | awk '{print $2}' \
+        | head -n 1 \
+        | awk '{print $1}' \
+        | grep -o '[0-9]*' )"
+    }
+
+    # Command to get a list of processes with uptime
+    ps_uptime='ps --no-headers -axo user:32,pid,etimes,command'
+    # Get the uptime of the Core container.
+    core_daemon_pid="$( ssh core "pgrep ${DAEMON_BIN}" )"
+    UPTIME="$( uptime "$( ssh core "${ps_uptime}" )" "${core_daemon_pid}" )"
+    # Get the uptime of the Node Monitor container.
+    UPTIME_MONITOR="$( uptime "$( ${ps_uptime} )" "${DAEMON_PID}" )"
   fi
 
   # Skip if filtered out
   if [[ ! -z "${DAEMON_BIN_FILTER}" ]] && [[ "${DAEMON_BIN_FILTER}" != "${DAEMON_BIN}" ]]
   then
-    continue
+    return
   fi
 
   if [[ "${DEBUG_OUTPUT}" -eq 1 ]]
   then
-    echo
-    echo "+++++++++++++++++++++++++++++"
-    echo "Username: ${USRNAME}"
-    echo "MN Username: ${MN_USRNAME}"
-    echo "Daemon: ${DAEMON_BIN} ${DAEMON_BIN_LOC}"
-    echo "Conf Location: ${DATADIR}"
-    echo "PID: ${DAEMON_PID}"
-    echo "Uptime: ${UPTIME}"
-    echo
+    printf '\n+++++++++++++++++++++++++++++\n'
+    printf 'Username: %s\n' "${USRNAME}"
+    printf 'MN Username: %s\n' "${MN_USRNAME}"
+    printf 'Daemon: %s %s\n' "${DAEMON_BIN}" "${DAEMON_BIN_LOC}"
+    printf 'Conf Location: %s\n' "${DATADIR}"
+    printf 'PID: %s\n' "${DAEMON_PID}"
+    printf 'Uptime: %s\n' "${UPTIME}"
+    printf 'Monitor Uptime: %s\n\n' "${UPTIME_MONITOR}"
   fi
 
-  GET_INFO_ON_THIS_NODE "${USRNAME}" "${CONTROLLER_BIN_LOC}" "${DAEMON_BIN}" "${DATADIR}" "${DAEMON_PID}" "${UPTIME}"
-
+  GET_INFO_ON_THIS_NODE \
+    "${USRNAME}" \
+    "${CONTROLLER_BIN_LOC}" \
+    "${DAEMON_BIN}" \
+    "${DATADIR}" \
+    "${DAEMON_PID}" \
+    "${UPTIME}" \
+    "${UPTIME_MONITOR}"
 }
 
- NOT_CRON_WORKFLOW () {
-
+NOT_CRON_WORKFLOW () {
   if [[ -z ${DAEMON_BIN} ]]
   then
     DAEMON_BIN="energi3"
@@ -2696,7 +2765,6 @@ Uptime: $( DISPLAYTIME "${UPTIME}" )"
   if [[ "${RESET}" == 'y' ]]
   then
     RESET_NODEMON
-
   fi
 
   if [[ "${arg1}" == 'node_run' ]]
