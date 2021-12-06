@@ -39,25 +39,25 @@ To run Energi Gen 3 Core Node in a Docker container:
   `git clone https://github.com/eandersons/energi3-docker-compose.git`;
 - create the following files:
 
-  - `configs/energi3_account_address` that contains the Energi Gen 3 account
-    address;
+  - `configuration/energi3_account_address` that contains the Energi Gen 3
+    account address;
 
     to add multiple accounts for staking, they must be specified as a comma
     separated list of addresses;
 
-  - `configs/energi3_account_password` that contains the Energi Gen 3 account
-    password;
+  - `configuration/energi3_account_password` that contains the Energi Gen 3
+    account password;
 
     to use multiple accounts for staking each password must be entered in a
     separate line in the same order addresses are specified in
-    `configs/energi3_account_address`; these files are used to get account's
-    address and password to automatically unlock account for staking when
-    launching Energi Gen 3 Core Node;
+    `configuration/energi3_account_address`; these files are used to get
+    account's address and password to automatically unlock account for staking
+    when launching Energi Gen 3 Core Node;
 
-- copy keystore file to `setup/.energicore3/keystore`;
+- copy keystore file(s) to `setup/.energicore3/keystore`;
 
-  > Note: a copy of keystore file should be stored in a safe place as the
-  > keystore file that will be placed in `setup/.energicore/keystore` will be
+  > Note: original keystore file(s) should be stored in a safe place as the
+  > keystore file(s) that will be placed in `setup/.energicore/keystore` will be
   > moved to a Docker volume.
 
 - open the necessary ports for external inbound access in router and/or
