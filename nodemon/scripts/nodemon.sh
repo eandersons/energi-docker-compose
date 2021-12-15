@@ -20,6 +20,7 @@
 #   1.0.7  20200502  ZAlam Added reset functionality
 #   1.1.0  20200504  ZAlam First Public Release
 #   1.1.1  20200505  ZAlam Update email content
+#   1.1.2  20211208  ZAlam Energi Core Node repo change
 
 # Energi Core Node Monitor for `energi3-docker-compose`
 #
@@ -42,7 +43,7 @@ source "nodemon_helper.sh"
 #+/ End of `energi3-docker-compose` addition.
 
 # Set script version
-NODEMONVER=1.1.1
+NODEMONVER=1.1.2
 
  : '
 # Run this file
@@ -86,7 +87,7 @@ function CTRL_C () {
 
  # NRG Parameters
  NRGAPI="https://explorer.energi.network/api"
- GITAPI_URL="https://api.github.com/repos/energicryptocurrency/energi3/releases/latest"
+ GITAPI_URL="https://api.github.com/repos/energicryptocurrency/energi/releases/latest"
 
  # Set variables
  MNTOTALNRG=0
