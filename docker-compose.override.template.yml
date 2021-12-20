@@ -3,6 +3,7 @@ services:
     build:
       args:
         ENERGI_VERSION: ${ENERGI_VERSION}
+        STAKER_HOME: ${STAKER_HOME}
       context: nodemon
     depends_on:
       - core
@@ -12,9 +13,9 @@ services:
     image: energi-nodemon:${ENERGI_VERSION}-1.1.1-0.0
     restart: unless-stopped
     volumes:
-      - core-data:/home/nrgstaker/.energicore3
+      - core-data:${STAKER_HOME}/.energicore3
       - monitor-data:/var/multi-masternode-data/nodebot
-      - monitor-logs:/home/nrgstaker/log
+      - monitor-logs:${STAKER_HOME}/log
 
 volumes:
   monitor-data:
