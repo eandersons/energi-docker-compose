@@ -10,8 +10,9 @@ services:
   core:
     build:
       args:
-        ENERGI_VERSION:
-          ${ENERGI_VERSION:?"`ENERGI_VERSION` must be set in `.env`!"}
+        ENERGI_VERSION: ${ENERGI_VERSION:?ENERGI_VERSION must be set in .env!"}
+        STAKER_HOME:
+          ${STAKER_HOME:?STAKER_HOME must be set in .env (it should be copied from .env.template.env)!}
       context: .
     image: energi-core:${ENERGI_VERSION}-0.0
     ports:
@@ -22,7 +23,7 @@ services:
       - account_address
       - account_password
     volumes:
-      - core-data:/home/nrgstaker/.energicore3
+      - core-data:${STAKER_HOME}/.energicore3
 
 volumes:
   core-data:
