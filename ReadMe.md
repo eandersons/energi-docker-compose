@@ -5,6 +5,15 @@ container using [Docker Compose](https://docs.docker.com/compose/) and the
 official
 [Energi Gen 3 image](https://hub.docker.com/r/energicryptocurrency/energi3).
 
+As Energi Core node officially can be run on macOS, Ubuntu and Windows (menu
+subsections "Staking Guides" and "VPS Guides" in
+[Energi Support Wiki](https://wiki.energi.world/en/home)), this repository is
+intended for use on non-Ubuntu Linux machines, though `energi3-docker-compose`
+can be used on Ubuntu as well and it should work on macOS too.
+Theoretically this repository should also work on Windows by using WSL and maybe
+Git Bash or any other Linux shell emulator that supports commands used in the
+helper shell script `e3dc`.
+
 This repository was created with staking in mind. More adjustments may be
 necessary to run containerised Energi Gen 3 Core Node as a Masternode.
 
