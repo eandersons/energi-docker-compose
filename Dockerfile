@@ -1,6 +1,6 @@
 ARG ENERGI_VERSION
 
-FROM energicryptocurrency/energi3:${ENERGI_VERSION}
+FROM energicryptocurrency/energi:${ENERGI_VERSION}
 
 ARG USER_AND_GROUP_ID=1000
 ARG USERNAME=nrgstaker
