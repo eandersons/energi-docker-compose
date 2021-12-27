@@ -6,7 +6,7 @@ ARG ENERGI_VERSION
 RUN apt-get update \
   && apt-get install --assume-yes --no-install-recommends --quiet musl-dev; \
   git clone --branch ${ENERGI_VERSION} --depth 1 \
-    https://github.com/energicryptocurrency/energi3.git energi3 \
+    https://github.com/energicryptocurrency/energi.git energi3 \
   && cd energi3 && make geth
 
 
