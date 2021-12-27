@@ -1,13 +1,14 @@
 # Build the binary `energi3` in a stock Go builder container
-FROM golang:1.15-buster as energi3-builder
+FROM golang:1.15-buster as energi-builder
 
 ARG ENERGI_VERSION
 
 RUN apt-get update \
   && apt-get install --assume-yes --no-install-recommends --quiet musl-dev; \
   git clone --branch ${ENERGI_VERSION} --depth 1 \
-    https://github.com/energicryptocurrency/energi3.git energi3 \
-  && cd energi3 && make geth
+    https://github.com/energicryptocurrency/energi.git energi \
+  && cd energi \
+  && make geth
 
 
 # `ubuntu:latest` means "The latest Ubuntu LTS release"
@@ -59,7 +60,7 @@ RUN DEBIAN_FRONTEND=noninteractive \
   touch ${LOG_DIR}/auth.log \
   && touch ${LOG_DIR}/kern.log
 
-COPY --from=energi3-builder [ "/go/energi3/build/bin/energi3", "${BIN_DIR}" ]
+COPY --from=energi-builder [ "/go/energi/build/bin/energi3", "${BIN_DIR}" ]
 COPY --chown=${USERNAME}:${USERNAME} [ ".ssh", "${SSH_DIR}/" ]
 COPY [ "etc", "/etc" ]
 
