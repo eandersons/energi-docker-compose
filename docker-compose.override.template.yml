@@ -10,7 +10,7 @@ services:
     env_file: nodemon/.env
     environment:
       - TERM=xterm
-    image: energi-nodemon:${ENERGI_VERSION}-1.1.2-1.0
+    image: energi-nodemon:${ENERGI_VERSION}-1.1.2-0.0
     restart: unless-stopped
     volumes:
       - core-data:${STAKER_HOME}/.energicore3
