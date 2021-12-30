@@ -234,9 +234,33 @@ staking-status | status)
   exit ${?}
   ;;
 update)
-  version_from_env() {
-    env=${1}
-    sed -n "s/${pattern_version_env}/\1/p" "${env}"
+  update_value_in_file() {
+    pattern_prefix="${1}"
+    pattern_value="${2}"
+    new_value="${3}"
+    target="${4}"
+    current_value="$( value_from_file \
+      "${pattern_prefix}" \
+      "${pattern_value}" \
+      "${target}" )"
+
+    if [ "${new_value}" != "${current_value}" ]
+    then
+      printf "Current value \`%s\` differs from the provided one: \`%s\`.\n" \
+        "${current_value}" \
+        "${new_value}"
+      printf "Updating it in \`%s\`.\n" "${target}"
+      sed -i \
+        "s/^\(${pattern_prefix}\)${pattern_value}$/\1${new_value}/" \
+        "${target}"
+    fi
+  }
+
+  value_from_file() {
+    pattern_prefix="${1}"
+    pattern_value="${2}"
+    file="${3}"
+    sed -n "s/${pattern_prefix}\(${pattern_value}\)$/\1/p" "${file}"
   }
 
   case "${2}" in
@@ -246,9 +270,6 @@ update)
   *) check_max_arguments_count ${#} 2 "${command_pattern_update}" ;;
   esac
 
-  pattern_key='ENERGI_VERSION='
-  pattern_version='v[0-9]\+\.[0-9]\+\.[0-9]\+'
-  pattern_version_env="^${pattern_key}\(${pattern_version}\)$"
   update="${up} --build"
   command="${update}"
   git pull
@@ -260,12 +281,20 @@ update)
 
   for last_argument in "${@}"; do :; done
 
+  pattern_version_prefix='^ENERGI_VERSION='
+  pattern_version_value='v[0-9]\+\.[0-9]\+\.[0-9]\+'
+  template_version=$( value_from_file \
+    "${pattern_version_prefix}" \
+    "${pattern_version_value}" \
+    "${env_template}" )
+
   case "${last_argument}" in
   '' | all | core | monitor | update)
-    version=$( version_from_env ${env_template} )
+    version="${template_version}"
     ;;
   *)
-    version=$( printf '%s' "${last_argument}" | grep "${pattern_version}" )
+    version=$( printf '%s' \
+      "${last_argument}" | grep "${pattern_version_value}" )
 
     if [ -z "${version}" ] || [ "${version}" = '' ]; then
       printf 'Invalid version format!\n'
@@ -278,14 +307,21 @@ update)
   esac
 
   check_env
-  current_version=$( version_from_env "${env}" )
-
-  if [ "${version}" != "${current_version}" ]; then
-    printf 'Current version %s differs from the provided one: %s.\n' \
-      "${current_version}" "${version}"
-    printf "Updating it in \`%s\`.\n" "${env}"
-    sed -i "s/^\(${pattern_key}\)${pattern_version}$/\1${version}/" "${env}"
-  fi
+  update_value_in_file \
+    "${pattern_version_prefix}" \
+    "${pattern_version_value}" \
+    "${version}" \
+    "${env}"
+  pattern_monitor_image_prefix='^[[:space:]]*image: '
+  pattern_monitor_tag_value='.*'
+  update_value_in_file \
+    "${pattern_monitor_image_prefix}" \
+    "${pattern_monitor_tag_value}" \
+    "$( value_from_file \
+      "${pattern_monitor_image_prefix}" \
+      "${pattern_monitor_tag_value}" \
+      'docker-compose.override.template.yml' )" \
+    'docker-compose.override.yml'
 
   ${command}
 
