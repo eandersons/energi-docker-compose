@@ -94,6 +94,17 @@ optional and almost all of them are used only in the configuration run.
   interactive; this means that all the neccessary values in setup process will
   have to be entered manually and all the environment variables can be without
   values;
+- `MESSAGE_TIME_ZONE`: to display date in time in messages in the specified time
+  zone;
+
+  if `MESSAGE_TIME_ZONE` is omitted or its value is empty, or if time zone name
+  is misspelled, container's default time zone (UTC) will be used;
+
+  available time zones are listed on:
+
+  - <https://twiki.org/cgi-bin/xtra/tzdatepick.html>;
+  - <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones>;
+
 - `TELEGRAM_BOT_TOKEN`: token for Telegram bot to send Energi Core Node Monitor
   messages to;
 

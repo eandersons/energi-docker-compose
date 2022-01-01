@@ -16,6 +16,7 @@ RUN apt-get update \
 FROM ubuntu:latest
 
 ARG BIN_DIR=/usr/local/bin
+ARG DEBIAN_FRONTEND=noninteractive
 ARG ECNM_DATA_DIR=/var/multi-masternode-data/nodebot
 ARG LOG_DIR=/var/log
 ARG USER_AND_GROUP_ID=1000
@@ -24,8 +25,7 @@ ARG STAKER_HOME
 ARG NODEMON_LOG_DIR=${STAKER_HOME}/log
 ARG SSH_DIR=${STAKER_HOME}/.ssh
 
-RUN DEBIAN_FRONTEND=noninteractive \
-  apt-get update --quiet \
+RUN apt-get update --quiet \
   && apt-get upgrade --assume-yes --quiet \
   && apt-get install --assume-yes --no-install-recommends --quiet \
     bc \
@@ -40,6 +40,7 @@ RUN DEBIAN_FRONTEND=noninteractive \
     rkhunter \
     sqlite3 \
     sudo \
+    tzdata \
     wget; \
   apt-get clean all \
   && rm --recursive --force /var/lib/apt/lists/*; \

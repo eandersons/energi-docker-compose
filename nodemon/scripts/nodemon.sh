@@ -569,7 +569,7 @@ RESET_NODEMON () {
 
   if [[ -z "${SERVER_INFO}" ]]
   then
-    SERVER_INFO=$( date -Ru )
+    SERVER_INFO="$( message_date )"
     # Show Server Alias.
     SERVER_ALIAS=$( SQL_QUERY "SELECT value FROM variables WHERE key = 'server_alias';" )
     if [[ -z "${SERVER_ALIAS}" ]]
@@ -804,7 +804,7 @@ PAYLOAD
 
   if [[ -z "${SERVER_INFO}" ]]
   then
-    SERVER_INFO=$( date -Ru )
+    SERVER_INFO="$( message_date )"
     SHOW_IP=$( SQL_QUERY "SELECT value FROM variables WHERE key = 'show_ip';" )
     if [[ "${SHOW_IP}" -gt 0 ]]
     then
