@@ -27,20 +27,9 @@
 # This is a modified version of
 # https://github.com/energicryptocurrency/energi3-provisioning/blob/master/scripts/linux/nodemon.sh
 # that is adjusted to use it with the dockerised Energi Core Node.
-#
-# Lines that are commented out with #| do not work or are not necessary to run
-# the Energi Core Node Monitor in a Docker container. Instead of removing them
-# these lines are left as a reference.
-# For other modifictions comments have been added before (starting with `#+`)
-# and after (starting with `#+/`) changes that are necessary to run the Energi
-# Core Node Monitor in a Docker container.
-# Environment variables whose value cannot be detected in a container are set
-# in `.env`.
 
-#+ Added for `energi3-docker-compose`.
 INTERACTIVE=${INTERACTIVE_SETUP:-y}
 source "nodemon_helper.sh"
-#+/ End of `energi3-docker-compose` addition.
 
 # Set script version
 NODEMONVER=1.1.2
@@ -95,10 +84,7 @@ function CTRL_C () {
  LOGDIR="/home/${USRNAME}/log"
  LOGFILE="${LOGDIR}/nodemon.log"
 
- #+ Modified for `energi3-docker-compose`.
- #|if [[ -z "${CURRENCY}" ]]
  if [[ -z "${CURRENCY:=$ECNM_CURRENCY}" ]]
- #+/ End of `energi3-docker-compose` modification.
  then
    CURRENCY=USD
  fi
@@ -125,19 +111,12 @@ function CTRL_C () {
       echo "and then rerun the script"
       echo "Exiting script..."
       sleep 3
-      #+ Modified for `energi3-docker-compose`.
-      #|exit 0
+
       exit 1
-      #+/ End of `energi3-docker-compose` modification.
     fi
   fi
 
-#+ Modified for `energi3-docker-compose`.
- # Set datadir
- #|DATADIR=$( ps -ef | grep datadir | grep -v "grep datadir" | grep -v "color" )
- #|DATADIR=$( echo $DATADIR | awk -F'datadir' '{print $2}' | awk -F' ' '{print $1}' )
  DATADIR=/home/nrgstaker/.energicore3
-#+/ End of `energi3-docker-compose` modification.
 
  # Attach command
  COMMAND="energi3 ${ARG} --datadir ${DATADIR} attach --exec "
@@ -384,10 +363,8 @@ fi
   echo $( ${COMMAND} "nrg.blockNumber" 2>/dev/null | jq -r '.' )
   echo ${CURRENTBLKNUM}
   echo "energi3 is not running.  Exiting nodemon."
-  #+ Modified for `energi3-docker-compose`.
-  #|exit 0
+
   exit 1
-  #+/ End of `energi3-docker-compose` modification.
  fi
 
  # Daemon_bin_name URL_to_logo Bot_name
@@ -560,11 +537,6 @@ RESET_NODEMON () {
   echo "Removing nodemon database"
   sudo rm -rf /var/multi-masternode-data/nodebot
 
-  #|echo "Removing systemctl services"
-  #|sudo systemctl stop nodemon.timer --now
-  #|sudo systemctl disable nodemon.timer
-  #|sudo rm /etc/systemd/system/nodemon.*
-
   exit 0
 }
 
@@ -614,10 +586,7 @@ RESET_NODEMON () {
     SHOW_IP=$( SQL_QUERY "SELECT value FROM variables WHERE key = 'show_ip';" )
     if [[ "${SHOW_IP}" -gt 0 ]]
     then
-      #+ Modifictaion for `energi3-docker-compose`.
-      #|IP_ADDRESS=$( hostname -i )
       IP_ADDRESS=$( ip_address )
-      #+/ End of `energi3-docker-compose` modification.
     fi
     if [[ ! -z "${IP_ADDRESS}" ]]
     then
@@ -718,17 +687,15 @@ PAYLOAD
   TEXT_A="${1}"
   # Url of the existing webhook.
   DISCORD_WEBHOOK_URL="${2}"
+
   while :
   do
     echo
     echo -en "${TEXT_A}s webhook url: "
-    #+ Modified for `energi3-docker-compose`
-    #|read -r -e -i "${DISCORD_WEBHOOK_URL}" input
     override_read ${DISCORD_WEBHOOK_URL}
-    #printf "\e[0m"
     DISCORD_WEBHOOK_URL="${REPLY:-${DISCORD_WEBHOOK_URL}}"
-    #+/ End of `energi3-docker-compose` modification
-    if [[ ! -z "${DISCORD_WEBHOOK_URL}" ]]
+
+    if [[ -n "${DISCORD_WEBHOOK_URL}" ]]
     then
       TOKEN=$( wget -qO- -o- "${DISCORD_WEBHOOK_URL}" | jq -r '.token' )
       if [[ -z "${TOKEN}" ]]
@@ -740,13 +707,12 @@ PAYLOAD
         echo -n ' -> Create Webhook -> Copy webhook url -> save'
         echo
         DISCORD_WEBHOOK_URL=''
-        #+ Added for `energi3-docker-compose`
+
         if [[ "${INTERACTIVE,,}" == 'n' ]]
         then
           echo "Exiting..."
           exit 1
         fi
-        #+/ End of `energi3-docker-compose` adition
       else
         echo "${TOKEN}"
         break
@@ -842,11 +808,7 @@ PAYLOAD
     SHOW_IP=$( SQL_QUERY "SELECT value FROM variables WHERE key = 'show_ip';" )
     if [[ "${SHOW_IP}" -gt 0 ]]
     then
-      # shellcheck disable=SC2028
-      #+ Modified for `energi3-docker-compose`.
-      #|SERVER_INFO=$( echo -ne "${SERVER_INFO}\n - " ; hostname -i )
       SERVER_INFO=$( echo -ne "${SERVER_INFO}\n - " ; ip_address )
-      #+/ End of `energi3-docker-compose` modification.
     fi
     SERVER_ALIAS=$( SQL_QUERY "SELECT value FROM variables WHERE key = 'server_alias';" )
     if [[ -z "${SERVER_ALIAS}" ]]
@@ -901,9 +863,11 @@ echo ${_PAYLOAD}
   fi
 
   CHAT_ID=$( SQL_QUERY "SELECT value FROM variables WHERE key = 'telegram_chatid';" )
+
   if [[ -z "${CHAT_ID}" ]] || [[ "${CHAT_ID}" == 'null' ]]
   then
     IS_OK='false'
+
     while [[ "${IS_OK}" == true ]]
     do
       GET_UPDATES=$( curl -s "https://api.telegram.org/bot${TOKEN}/getUpdates" )
@@ -912,15 +876,16 @@ echo ${_PAYLOAD}
       then
         echo "Could not get a response from Telegram Bot."
         echo "Login to Telegram and post a message to the bot."
-        #+ Modified for `energi3-docker-compose`.
+
         if [[ ${interactive:-'y'} == 'n' ]]
         then
           REPLY=check
         else
           read -p "Press ENTER to check again or q to quit." -r
         fi
-        #+/ End of `energi3-docker-compose` modification.
+
         REPLY=${REPLY,,} # tolower
+
         if [[ "${REPLY}" == q ]]
         then
           return 1 2>/dev/null
@@ -1284,12 +1249,9 @@ echo ${_PAYLOAD}
   fi
 
   # Write to the database.
-  if [[ ! -z "${ERRORS}" ]]
+  if [[ -n "${ERRORS}" ]]
   then
-    #+ Modified for `energi3-docker-compose`.
-    #|echo "${ERRORS}" >/dev/tty
-    echo "${ERRORS}" >/dev/stderr
-    #+/ End of `energi3-docker-compose` modification.
+    printf '%s\n' "${ERRORS}" >/dev/stderr
   elif [[ "${TEST_OUTPUT}" -eq 0 ]] && [[ ! -z "${MESSAGE}" ]]
   then
     SQL_QUERY "REPLACE INTO system_log (start_time,last_ping_time,name,message) VALUES ('${START_TIME}','${UNIX_TIME}','${NAME}','${MESSAGE}');"
@@ -2525,32 +2487,33 @@ GET_INFO_ON_THIS_NODE () {
   fi
 
   USR_HOME_DIR=$( grep ${USRNAME} /etc/passwd | awk -F: '{print $6}' )
+
   if [[ "${USR_HOME_DIR}" == 'X' ]]
   then
     USR_HOME_DIR=${USR_HOME_DIR_ALT}
   fi
 
   MN_USRNAME=$( basename "${USR_HOME_DIR}" )
-
   DAEMON_BIN=''
   CONTROLLER_BIN=''
-
   CONF_LOCATIONS=${DATADIR}
+
   if [[ -z "${CONF_LOCATIONS}" ]]
   then
     : # Do nothing
   fi
+
   CONF_FOLDER=$( dirname "${CONF_LOCATIONS}" )
-
-
   # Get daemon bin name and pid from lock in toml folder.
   CONF_FOLDER=$( dirname "${CONF_LOCATION}" )
   DAEMON_BIN=energi3
   CONTROLLER_BIN="${DAEMON_BIN}"
-  #+ Modified for `energi3-docker-compose`.
-  #|DAEMON_PID=$( ps -ef | grep energi3 | grep -v "grep energi3" | grep -v "grep --color=auto energi3" | grep -v "attach" | awk '{print $2}' )
-  DAEMON_PID=$( ps -ef | grep nodemon_cron.sh | grep -v "grep nodemon_cron.sh" | grep -v "grep --color=auto nodemon_cron.sh" | grep -v "attach" | awk '{print $2}' )
-  #+/ End of modification for `energi3-docker-compose`.
+  DAEMON_PID=$( ps -ef \
+    | grep nodemon_cron.sh \
+    | grep -v "grep nodemon_cron.sh" \
+    | grep -v "grep --color=auto nodemon_cron.sh" \
+    | grep -v "attach" \
+    | awk '{print $2}' )
 
   # Get path to daemon bin.
   if [[ ! -z "${DAEMON_PID}" ]]
@@ -2559,6 +2522,7 @@ GET_INFO_ON_THIS_NODE () {
     CONTROLLER_BIN_LOC="${DATADIR}"
     COMMAND_FOLDER=$( dirname "${DAEMON_BIN_LOC}" )
     CONTROLLER_BIN_FOLDER=$( find "${COMMAND_FOLDER}" -executable -type f 2>/dev/null | grep -Ei "${DAEMON_BIN}$" )
+
     if [[ ! -z "${CONTROLLER_BIN_FOLDER}" ]]
     then
       CONTROLLER_BIN_LOC="${CONTROLLER_BIN_FOLDER}"
@@ -2624,50 +2588,35 @@ NOT_CRON_WORKFLOW () {
     DAEMON_BIN="energi3"
   fi
 
-  echo
-  echo "Interactive Section. Press enter to use defaults."
+  printf '\nInteractive Section. Press enter to use defaults.\n'
   SERVER_ALIAS=$( SQL_QUERY "SELECT value FROM variables WHERE key = 'server_alias';" )
-  #+ Modified for `energi3-docker-compose`.
-  #|if [[ -z "${SERVER_ALIAS}" ]]
-  if [[ -z "${SERVER_ALIAS}" ]]\
-  || [[ "${SERVER_ALIAS}" != "${ECNM_SERVER_ALIAS:=$( hostname )}" ]]
-  #+/ End of `energi3-docker-compose` modification.
-  then
-    #+ Modified for `energi3-docker-compose`.
-    #|SERVER_ALIAS=$( hostname )
-    SERVER_ALIAS="${ECNM_SERVER_ALIAS}"
-    #+/ End of `energi3-docker-compose` modification.
-  fi
-  printf "Current alias for this server: "
-  #+ Modified for `energi3-docker-compose`
-  #|read -e -i "${SERVER_ALIAS}" -r
-  override_read ${SERVER_ALIAS}
-  #+/ End of `energi3-docker-compose` modification
-  SQL_QUERY "REPLACE INTO variables (key,value) VALUES ('server_alias','${REPLY}');"
 
+  if [[ -z "${SERVER_ALIAS}" ]] \
+  || [[ "${SERVER_ALIAS}" != "${ECNM_SERVER_ALIAS:=$( hostname )}" ]]
+  then
+    SERVER_ALIAS="${ECNM_SERVER_ALIAS}"
+  fi
+
+  printf "Current alias for this server: "
+  override_read "${SERVER_ALIAS}"
+  SQL_QUERY "REPLACE INTO variables (key,value) VALUES ('server_alias','${REPLY}');"
   echo
-  #+ Modified for `energi3-docker-compose`.
-  #|echo -ne "IP Address: "; hostname -i
   echo -ne "IP Address: "; ip_address
-  #+/ End of `energi3-docker-compose` modification.
   SHOW_IP=$( SQL_QUERY "SELECT value FROM variables WHERE key = 'show_ip';" )
-  #+ Modified for `energi3-docker-compose`.
-  #|if [[ -z "${SHOW_IP}" ]] || [[ "${SHOW_IP}" == '1' ]]
+
   if [[ -z "${SHOW_IP:-${ECNM_SHOW_IP:=n}}" ]]\
   || [[ "${ECNM_SHOW_IP}" == 'y' ]]\
   || [[ "${SHOW_IP}" == '1' && "${ECNM_SHOW_IP}" != 'n' ]]
-  #+/ End of `energi3-docker-compose` modification.
   then
     SHOW_IP='y'
   else
     SHOW_IP='n'
   fi
+
   printf "Display IP in logs (y/n)? "
-  #+ Modified for `energi3-docker-compose`.
-  #|read -e -i "${SHOW_IP}" -r
   override_read ${SHOW_IP}
-  #+/ End of `energi3-docker-compose` modification.
   REPLY=${REPLY,,}  # tolower
+
   if [[ "${REPLY}" == y ]]
   then
     SQL_QUERY "REPLACE INTO variables (key,value) VALUES ('show_ip','1');"
@@ -2679,7 +2628,7 @@ NOT_CRON_WORKFLOW () {
   PREFIX='Setup'
   REPLY='y'
   DISCORD_WEBHOOK_URL=$( SQL_QUERY "SELECT value FROM variables WHERE key = 'discord_webhook_url_error';" )
-  #+ Added for `energi3-docker-compose`.
+
   if [[ "${INTERACTIVE}" == 'n' && (\
     -z "${DISCORD_WEBHOOK_ERROR}" || -z "${DISCORD_WEBHOOK_INFORMATION}"\
     || -z "${DISCORD_WEBHOOK_SUCCESS}" || -z "${DISCORD_WEBHOOK_WARNING}"\
@@ -2687,25 +2636,23 @@ NOT_CRON_WORKFLOW () {
   then
     REPLY='n'
   fi
-  #+/ End of `energi3-docker-compose` addition.
+
   if [[ ! -z "${DISCORD_WEBHOOK_URL}" ]]
   then
     REPLY='n'
     PREFIX='Redo'
   fi
-  #+ Added for `energi3-docker-compose`.
+
   if [[ "${INTERACTIVE}" == 'n' && "${DISCORD_WEBHOOK_CHANGE:-n}" == 'y' ]]
   then
     REPLY='y'
     PREFIX='Change'
   fi
-  #+/ End of `energi3-docker-compose` addition.
-  echo -n "${PREFIX} Discord Bot webhook URLs (y/n)? "
-  #+ Modified for `energi3-docker-compose`.
-  #|read -e -i "${REPLY}" -r
+
+  printf '%s Discord Bot webhook URLs (y/n)? ' "${PREFIX}"
   override_read ${REPLY}
-  #+/ End of `energi3-docker-compose` modification.
   REPLY=${REPLY,,}  # tolower
+
   if [[ "${REPLY}" == 'y' ]]
   then
     GET_DISCORD_WEBHOOKS
@@ -2717,11 +2664,9 @@ NOT_CRON_WORKFLOW () {
   REPLY='y'
   DISCORD_WEBHOOK_URL=$( SQL_QUERY "SELECT value FROM variables WHERE key = 'discord_webhook_url_error';" )
   CHAT_ID=$( SQL_QUERY "SELECT value FROM variables WHERE key = 'telegram_chatid';" )
-  #+ Modified for `energi3-docker-compose`.
-  #|if [[ ! -z "${DISCORD_WEBHOOK_URL}" ]]
+
   if [[ ( "${INTERACTIVE}" == 'n' && -z "${TELEGRAM_BOT_TOKEN}" )\
   || ( "${INTERACTIVE}" == 'y' && -n "${DISCORD_WEBHOOK_URL}" ) ]]
-  #+/ End of `energi3-docker-compose` modification.
   then
     REPLY='n'
   fi
@@ -2730,35 +2675,25 @@ NOT_CRON_WORKFLOW () {
     REPLY='n'
     PREFIX='Redo'
   fi
-  #+ Added for `energi3-docker-compose`.
+
   if [[ "${INTERACTIVE}" == 'n' ]]\
   && [[ "${TELEGRAM_BOT_TOKEN_CHANGE:-n}" == 'y' ]]
   then
     REPLY='y'
     PREFIX='Change'
   fi
-  #+/ End of `energi3-docker-compose` addition.
-  #+ Modified for `energi3-docker-compose`.
-  echo -n "${PREFIX} Telegram Bot token (y/n)? "
-  #|read -e -i "${REPLY}" -r
+
+  printf '%s Telegram Bot token (y/n)? ' "${PREFIX}"
   override_read "${REPLY}"
-  #+/ End of `energi3-docker-compose` modification.
   REPLY=${REPLY,,}  # tolower
+
   if [[ "${REPLY}" == y ]]
   then
     TELEGRAM_SETUP
     echo "Telegram setup complete!"
   fi
 
-  #+ Modified for `energi3-docker-compose`.
-  #|echo
-  #|echo "Installing as a systemd service."
-  #|sleep 1
-  #|INSTALL_NODEMON_SERVICE
-  #|echo "Service Install Done"
-  #|return 1 2>/dev/null || exit 1
   exit 0
-  #+/ End of `energi3-docker-compose` modification.
 }
 
   # Main
