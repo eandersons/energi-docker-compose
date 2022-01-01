@@ -1,16 +1,6 @@
 #!/bin/bash
 
-function override_read {
-  if [[ "${INTERACTIVE}" == 'n' ]]
-  then
-    printf '%s' "${1}"
-    REPLY="${1}"
-  else
-    read -e -i "${1}" -r
-  fi
-}
-
-function ip_address {
+ip_address () {
   if [[ "${ECNM_SHOW_IP_EXTERNAL:-n}" == 'y' ]]
   then
     IP_ADDRESS="$( wget -qO- https://api.ipify.org )"
@@ -19,4 +9,14 @@ function ip_address {
   fi
 
   printf '%s' "${IP_ADDRESS}"
+}
+
+override_read () {
+  if [[ "${INTERACTIVE}" == 'n' ]]
+  then
+    printf '%s\n' "${1}"
+    REPLY="${1}"
+  else
+    read -e -i "${1}" -r
+  fi
 }
