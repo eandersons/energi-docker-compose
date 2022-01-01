@@ -11,6 +11,10 @@ ip_address () {
   printf '%s' "${IP_ADDRESS}"
 }
 
+message_date() {
+  TZ="${MESSAGE_TIME_ZONE}" date -R
+}
+
 override_read () {
   if [[ "${INTERACTIVE}" == 'n' ]]
   then
