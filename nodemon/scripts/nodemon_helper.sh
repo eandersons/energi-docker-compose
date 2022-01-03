@@ -11,6 +11,19 @@ ip_address () {
   printf '%s' "${IP_ADDRESS}"
 }
 
+market_price() {
+  # Get price once
+  if [[ -z "${NRGMKTPRICE}" ]]
+  then
+    NRGMKTPRICE="$( curl \
+      --connect-timeout 30 \
+      --header "Accept: application/json" \
+      --silent \
+      "https://min-api.cryptocompare.com/data/price?fsym=NRG&tsyms=${CURRENCY}" \
+      | jq ".${CURRENCY}" )"
+  fi
+}
+
 message_date() {
   TZ="${MESSAGE_TIME_ZONE}" date -R
 }
