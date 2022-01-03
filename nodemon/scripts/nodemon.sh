@@ -1938,23 +1938,16 @@ REPORT_INFO_ABOUT_NODE () {
       BLOCKMINER=${MINER[${CHKBLOCK}]}
 
       # Update database if stake received
-      if [[ ${ADDR} == ${BLOCKMINER} ]]
+      if [[ ${ADDR} == "${BLOCKMINER}" ]]
       then
         STAKERWD=Y
         REWARDTIME=$( ${COMMAND} "nrg.getBlock($CHKBLOCK).timestamp" 2>/dev/null )
 
-        # Get price once
-        if [[ -z "${NRGMKTPRICE}" ]]
-        then
-          NRGMKTPRICE=$( curl -H "Accept: application/json" --connect-timeout 30 -s "https://min-api.cryptocompare.com/data/price?fsym=NRG&tsyms=${CURRENCY}" | jq .${CURRENCY} )
-        fi
-
+        market_price
         # No way to determine at the time. Assume default
         REWARDAMT=2.28
-
         SQL_QUERY "INSERT INTO stake_rewards (stakeAddress, rewardTime, blockNum, Reward, balance, nrgPrice)
           VALUES ('${ADDR}','${REWARDTIME}','${CHKBLOCK}','${REWARDAMT}', '${ACCTBALANCE}', '${NRGMKTPRICE}');"
-
         log "${SHORTADDR}: *** Stake received ***"
 
         if [[ ${NETWORKDIFF} -eq 0 ]]
@@ -1969,7 +1962,6 @@ REPORT_INFO_ABOUT_NODE () {
         COEFF=0.1
         BLOCKTIME_SECONDS=60
         COOLDOWNTIME=3600
-
         # Get average staking times for masternode and staking rewards.
         COINS_STAKED_TOTAL_NETWORK=$( echo "${k} * ${NETWORKDIFF}" | bc -l )
         SEC_TO_AVG_STAKE_PER_BAL=$( echo "${COINS_STAKED_TOTAL_NETWORK} / ${ACCTBALANCE} * ${BLOCKTIME_SECONDS} * ${COEFF}" | bc -l | sed '/\./ s/\.\{0,1\}0\{1,\}$//' )
@@ -2038,19 +2030,19 @@ Next Stake ETA: ${TIME_TO_STAKE}"
             MNRWD=Y
           fi
 
-          # Get price once
-          if [[ -z "${NRGMKTPRICE}" ]]
-          then
-            NRGMKTPRICE=$( curl -H "Accept: application/json" --connect-timeout 30 -s "https://min-api.cryptocompare.com/data/price?fsym=NRG&tsyms=${CURRENCY}" | jq .${CURRENCY} )
-          fi
-
+          market_price
           # Add rewards for block
-          BLOCKSUMWEI=$( echo $TXLSTINT | jq -r '.result | map(.value | tonumber) | add ' )
-          BLOCKSUMWEI=$( printf "%.0f" $BLOCKSUMWEI )
-          BLOCKSUMNRG=$( echo " ${BLOCKSUMWEI} / 1000000000000000000 " | bc -l | sed '/\./ s/\.\{0,1\}0\{1,\}$//' )
+          BLOCKSUMWEI=$( printf '%s' "$TXLSTINT" | jq -r '.result | map(.value | tonumber) | add ' )
+          BLOCKSUMWEI=$( printf "%.0f" "$BLOCKSUMWEI" )
+          BLOCKSUMNRG=$( printf ' %s / 1000000000000000000 ' "${BLOCKSUMWEI}" \
+            | bc -l \
+            | sed '/\./ s/\.\{0,1\}0\{1,\}$//' )
 
           # Masternode reward based on collateral
-          MASTERNODE_REWARD=$( echo "${MN_REWARD_FACTOR} * ${MNCOLLATERAL} / 1000" | bc -l | sed '/\./ s/\.\{0,1\}0\{1,\}$//' )
+          MASTERNODE_REWARD=$( \
+            printf "%s * %s / 1000" "${MN_REWARD_FACTOR}" "${MNCOLLATERAL}" \
+            | bc -l \
+            | sed '/\./ s/\.\{0,1\}0\{1,\}$//' )
 
           # Time of block generation
           if [[ -z ${REWARDTIME} ]]
@@ -2078,12 +2070,7 @@ Next Stake ETA: ${TIME_TO_STAKE}"
 
             log "${SHORTADDR}: *** Mn Reward received ***"
 
-            # Get price once
-            if [[ -z "${NRGMKTPRICE}" ]]
-            then
-              NRGMKTPRICE=$( curl -H "Accept: application/json" --connect-timeout 30 -s "https://min-api.cryptocompare.com/data/price?fsym=NRG&tsyms=${CURRENCY}" | jq .${CURRENCY} )
-            fi
-
+            market_price
             _MNREWARDS=$( SQL_REPORT "SELECT blockNum,Reward FROM mn_rewards WHERE blockNum BETWEEN ${STARTMNBLK} and ${ENDMNBLK};" )
 
             _PAYLOAD="__Account: ${SHORTADDR}__
