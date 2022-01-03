@@ -6,6 +6,8 @@ Dockerised Energi Core Node Monitor for the dockerised Energi Core Node.
 
 - [Enable the Energi Core Node Monitor service](#enable-the-energi-core-node-monitor-service)
   - [Environment variables](#environment-variables)
+    - [Boolean-like values](#boolean-like-values)
+    - [Environment variables explained](#environment-variables-explained)
 
 ---
 
@@ -38,13 +40,29 @@ afterwards.
 ### Environment variables
 
 `.env` contains environment variables that are used to set up Energi Core Node
-Monitor in a non-interactive mode (`INTERACTIVE_SETUP=n`). All of them are
-optional and almost all of them are used only in the configuration run.
+Monitor in a non-interactive mode (`INTERACTIVE_SETUP` has a positive
+boolean-like value). All of them are optional and most of them are used only in
+the configuration run.
 
-- `DISCORD_WEBHOOK_CHANGE`: when `INTERACTIVE_SETUP=n`, value `y`  indicates
-  that the existing Discord webhooks should be replaced with the value of the
-  following environment variables if the Energi Core Node Monitor has already
-  been set up:
+#### Boolean-like values
+
+The following values are considered as positive boolean values (`true`, case
+insensitive):
+
+- `y`;
+- `yes`;
+- `true`;
+- `1`.
+
+Anything else (including empty value or omitted variable) is considered as
+`false`.
+
+#### Environment variables explained
+
+- `DISCORD_WEBHOOK_CHANGE`: for non-interactive setup a positive boolean-like
+  value indicates that the existing Discord webhooks should be replaced with the
+  value of the following environment variables if the Energi Core Node Monitor
+  has already been set up:
 
   - `DISCORD_WEBHOOK_ERROR`;
   - `DISCORD_WEBHOOK_INFORMATION`;
@@ -79,21 +97,22 @@ optional and almost all of them are used only in the configuration run.
 - `ECNM_SERVER_ALIAS`: a server name to be used in messages;
 
   default value: container's hostname (something like `35199a65247e`)
-- `ECNM_SHOW_IP`: `y` indicates that the Energi Core Node Monitor's IP address
-  should be displayed in messages;
+- `ECNM_SHOW_IP`: a positive boolean-like value indicates that the Energi Core
+  Node Monitor's IP address should be displayed in messages;
 
   this value alone is quite pointless as it will display the Energi Core Node
   Monitor Docker container's internal IP address (something like `192.168.0.2`);
   to display server's external IP address, the environment variable
-  `ECNM_SHOW_IP_EXTERNAL` must be set to `y`;
-- `ECNM_SHOW_IP_EXTERNAL`: when `ECNM_SHOW_IP=y`, value `y` indicates that the
-  server's external IP address should be displayed in messages instead of
-  container's internal IP;
-- `INTERACTIVE_SETUP`: setting this environment variable to `y` or not setting
-  value at all indicates that the Energi Core Node Monitor setup process will be
-  interactive; this means that all the neccessary values in setup process will
-  have to be entered manually and all the environment variables can be without
-  values;
+  `ECNM_SHOW_IP_EXTERNAL` must be set to a positive boolean-like value;
+- `ECNM_SHOW_IP_EXTERNAL`: when `ECNM_SHOW_IP`, a positive boolean-like value
+  indicates that the server's external IP address should be displayed in
+  messages instead of container's internal IP;
+- `INTERACTIVE_SETUP`: a positive boolean-like value indicates that the Energi
+  Core Node Monitor setup process will be interactive; this means that all the
+  neccessary values in setup process will have to be entered manually;
+  for interactive setup all environment variables can be left without values;
+
+  the default value is `yes`;
 - `MESSAGE_TIME_ZONE`: to display date in time in messages in the specified time
   zone;
 
@@ -112,11 +131,11 @@ optional and almost all of them are used only in the configuration run.
   > recently so the `result` array in the response of
   > `https://api.telegram.org/bot{Telegram bot token}/getUpdates` (where
   > `{Telegram bot token}` is the actual token) is not empty, otherwise the
-  > script will not be able to setup Telegram integration.
+  > script will not be able to set up Telegram integration.
 
   detailed instructions on how to set up Telegram are in
   [the official Energi Core Node Monitoring Tool guid (section "Setup Telegram")](https://docs.energi.software/en/advanced/nodemon#telegram);
-- `TELEGRAM_BOT_TOKEN_CHANGE`: when `INTERACTIVE_SETUP=n`, value `y` indicates
-  that the existing Telegram token must be replaced with the one that is
-  assigned to `TELEGRAM_BOT_TOKEN` if the Energi Core Node Monitor has been
-  already set up.
+- `TELEGRAM_BOT_TOKEN_CHANGE`: for interactive setup a positive boolean-like
+  value indicates that the existing Telegram token must be replaced with the one
+  that is assigned to `TELEGRAM_BOT_TOKEN` if the Energi Core Node Monitor has
+  been already set up.

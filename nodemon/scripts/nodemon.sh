@@ -28,7 +28,7 @@
 # https://github.com/energicryptocurrency/energi3-provisioning/blob/master/scripts/linux/nodemon.sh
 # that is adjusted to use it with the dockerised Energi Core Node.
 
-INTERACTIVE=${INTERACTIVE_SETUP:-y}
+INTERACTIVE=${INTERACTIVE_SETUP:-yes}
 source "nodemon_helper.sh"
 
 # Set script version
@@ -681,8 +681,8 @@ PAYLOAD
 )
 }
 
- # Get the webhook url and test to make sure it works.
- DISCORD_WEBHOOK_URL_PROMPT () {
+# Get the webhook url and test to make sure it works.
+DISCORD_WEBHOOK_URL_PROMPT () {
   # Title of this webhook.
   TEXT_A="${1}"
   # Url of the existing webhook.
@@ -690,36 +690,38 @@ PAYLOAD
 
   while :
   do
-    echo
-    echo -en "${TEXT_A}s webhook url: "
-    override_read ${DISCORD_WEBHOOK_URL}
+    printf '\n%ss webhook url: ' "${TEXT_A}"
+    override_read "${DISCORD_WEBHOOK_URL}"
     DISCORD_WEBHOOK_URL="${REPLY:-${DISCORD_WEBHOOK_URL}}"
 
     if [[ -n "${DISCORD_WEBHOOK_URL}" ]]
     then
       TOKEN=$( wget -qO- -o- "${DISCORD_WEBHOOK_URL}" | jq -r '.token' )
+
       if [[ -z "${TOKEN}" ]]
       then
-        echo "Given URL is not a webhook."
-        echo
-        echo -n 'Get Webhook URL: Your personal server (press plus on left if you do not have one)'
-        echo -n ' -> Right click on your server -> Server Settings -> Webhooks'
-        echo -n ' -> Create Webhook -> Copy webhook url -> save'
-        echo
+        printf 'Given URL is not a webhook.\n\n'
+        printf 'Get Webhook URL: Your personal server '
+        printf '(press plus on left if you do not have one)'
+        printf ' -> Right click on your server -> Server Settings -> Webhooks'
+        printf ' -> Create Webhook -> Copy webhook url -> save\n'
         DISCORD_WEBHOOK_URL=''
 
-        if [[ "${INTERACTIVE,,}" == 'n' ]]
+        if ! value_to_bool "${INTERACTIVE}"
         then
           echo "Exiting..."
+
           exit 1
         fi
       else
-        echo "${TOKEN}"
+        printf '%s\n' "${TOKEN}"
         break
       fi
     fi
+
     sleep 1
   done
+
   SQL_QUERY "REPLACE INTO variables (key,value) VALUES ('discord_webhook_url_${TEXT_A}','${DISCORD_WEBHOOK_URL}');"
 }
 
@@ -2604,9 +2606,9 @@ NOT_CRON_WORKFLOW () {
   echo -ne "IP Address: "; ip_address
   SHOW_IP=$( SQL_QUERY "SELECT value FROM variables WHERE key = 'show_ip';" )
 
-  if [[ -z "${SHOW_IP:-${ECNM_SHOW_IP:=n}}" ]]\
-  || [[ "${ECNM_SHOW_IP}" == 'y' ]]\
-  || [[ "${SHOW_IP}" == '1' && "${ECNM_SHOW_IP}" != 'n' ]]
+  if value_to_bool "${ECNM_SHOW_IP}" \
+  || ( value_to_bool "${SHOW_IP:-${ECNM_SHOW_IP:=no}}" \
+    && value_to_bool "${ECNM_SHOW_IP}" )
   then
     SHOW_IP='y'
   else
@@ -2629,21 +2631,24 @@ NOT_CRON_WORKFLOW () {
   REPLY='y'
   DISCORD_WEBHOOK_URL=$( SQL_QUERY "SELECT value FROM variables WHERE key = 'discord_webhook_url_error';" )
 
-  if [[ "${INTERACTIVE}" == 'n' && (\
-    -z "${DISCORD_WEBHOOK_ERROR}" || -z "${DISCORD_WEBHOOK_INFORMATION}"\
-    || -z "${DISCORD_WEBHOOK_SUCCESS}" || -z "${DISCORD_WEBHOOK_WARNING}"\
-  ) ]]
+  if ! value_to_bool "${INTERACTIVE}" && [[ \
+    -z "${DISCORD_WEBHOOK_ERROR}" \
+    || -z "${DISCORD_WEBHOOK_INFORMATION}" \
+    || -z "${DISCORD_WEBHOOK_SUCCESS}" \
+    || -z "${DISCORD_WEBHOOK_WARNING}" \
+  ]]
   then
     REPLY='n'
   fi
 
-  if [[ ! -z "${DISCORD_WEBHOOK_URL}" ]]
+  if [[ -n "${DISCORD_WEBHOOK_URL}" ]]
   then
     REPLY='n'
     PREFIX='Redo'
   fi
 
-  if [[ "${INTERACTIVE}" == 'n' && "${DISCORD_WEBHOOK_CHANGE:-n}" == 'y' ]]
+  if ! value_to_bool "${INTERACTIVE}" \
+  && value_to_bool "${DISCORD_WEBHOOK_CHANGE}"
   then
     REPLY='y'
     PREFIX='Change'
@@ -2665,8 +2670,8 @@ NOT_CRON_WORKFLOW () {
   DISCORD_WEBHOOK_URL=$( SQL_QUERY "SELECT value FROM variables WHERE key = 'discord_webhook_url_error';" )
   CHAT_ID=$( SQL_QUERY "SELECT value FROM variables WHERE key = 'telegram_chatid';" )
 
-  if [[ ( "${INTERACTIVE}" == 'n' && -z "${TELEGRAM_BOT_TOKEN}" )\
-  || ( "${INTERACTIVE}" == 'y' && -n "${DISCORD_WEBHOOK_URL}" ) ]]
+  if ( ! value_to_bool "${INTERACTIVE}" && [[ -z "${TELEGRAM_BOT_TOKEN}" ]] ) \
+  || ( value_to_bool "${INTERACTIVE}" && [[ -n "${DISCORD_WEBHOOK_URL}" ]] )
   then
     REPLY='n'
   fi
@@ -2676,8 +2681,8 @@ NOT_CRON_WORKFLOW () {
     PREFIX='Redo'
   fi
 
-  if [[ "${INTERACTIVE}" == 'n' ]]\
-  && [[ "${TELEGRAM_BOT_TOKEN_CHANGE:-n}" == 'y' ]]
+  if ! value_to_bool "${INTERACTIVE}" \
+  && value_to_bool "${TELEGRAM_BOT_TOKEN_CHANGE}"
   then
     REPLY='y'
     PREFIX='Change'

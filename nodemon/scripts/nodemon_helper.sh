@@ -24,3 +24,17 @@ override_read () {
     read -e -i "${1}" -r
   fi
 }
+
+value_to_bool() {
+  value="${1,,}"
+
+  if [[ "${value}" == 'y' ]] \
+  || [[ "${value}" == 'yes' ]] \
+  || [[ "${value}" == 'true' ]] \
+  || [[ "${value}" -eq 1 ]]
+  then
+    return 0
+  fi
+
+  return 1
+}
