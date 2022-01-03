@@ -2368,6 +2368,16 @@ Running most recent version: ${VERSION}" "Node version current" "${DISCORD_WEBHO
     "PID: ${DAEMON_PID}" \
     "Uptime: $( DISPLAYTIME "${UPTIME}" )" \
     "Monitor uptime: $( DISPLAYTIME "${UPTIME_MONITOR}" )" )"
+
+  if value_to_bool "${MARKET_PRICE_IN_INFORMATION}"
+  then
+    market_price
+    _PAYLOAD="$( printf '%s\nMarket price: %s %s' \
+      "${_PAYLOAD}" \
+      "${CURRENCY}" \
+      "${NRGMKTPRICE}" )"
+  fi
+
   PROCESS_NODE_MESSAGES \
     "${DATADIR}" \
     'node_info' \

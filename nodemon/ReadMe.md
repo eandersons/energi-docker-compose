@@ -113,6 +113,8 @@ Anything else (including empty value or omitted variable) is considered as
   for interactive setup all environment variables can be left without values;
 
   the default value is `yes`;
+- `MARKET_PRICE_IN_INFORMATION`: when set to a positive boolean-like value, the
+  current market price will be added to informational message;
 - `MESSAGE_TIME_ZONE`: to display date in time in messages in the specified time
   zone;
 
