@@ -1978,21 +1978,21 @@ REPORT_INFO_ABOUT_NODE () {
         # Debug Output
         if [[ "${DEBUG_OUTPUT}" -eq 1 ]]
         then
-          echo "Staking Balance: ${ACCTBALANCE}"
-          echo "Avg Difficulty: ${NETWORKDIFF}"
-          echo "Next Stake ETA: ${TIME_TO_STAKE}"
-          echo
+          printf '%s\n%s\n%s\n' \
+            "Staking Balance: ${ACCTBALANCE}" \
+            "Avg Difficulty: ${NETWORKDIFF}" \
+            "Next Stake ETA: ${TIME_TO_STAKE}"
         fi
 
         #Network Diff: ${NETWORKDIFF}
         # Create payload for stake reward
-        _PAYLOAD="__Account: ${SHORTADDR}__
-Mkt Price: ${CURRENCY} ${NRGMKTPRICE}
-New Balance: ${ACCTBALANCE} NRG
-Stake Reward: ${REWARDAMT} NRG
-Block Number: ${CHKBLOCK}
-Next Stake ETA: ${TIME_TO_STAKE}"
-
+        _PAYLOAD="$( printf '%s\n%s\n%s\n%s\n%s\n%s' \
+          "__Account: ${SHORTADDR}__" \
+          "Market Price: ${CURRENCY} ${NRGMKTPRICE}" \
+          "New Balance: ${ACCTBALANCE} NRG" \
+          "Stake Reward: ${REWARDAMT} NRG" \
+          "Block Number: ${CHKBLOCK}" \
+          "Next Stake ETA: ${TIME_TO_STAKE}" )"
         # Post message
         PROCESS_NODE_MESSAGES "${SHORTADDR}" "stake_reward" "4" "${_PAYLOAD}" "" "${DISCORD_WEBHOOK_USERNAME}" "${DISCORD_WEBHOOK_AVATAR}"
 
@@ -2001,6 +2001,7 @@ Next Stake ETA: ${TIME_TO_STAKE}"
         then
           SEND_EMAIL "Stake received"
         fi
+
         if [[ "${SENDSMS}" = "Y" ]]
         then
           SEND_SMS "Stake received"
@@ -2072,13 +2073,12 @@ Next Stake ETA: ${TIME_TO_STAKE}"
 
             market_price
             _MNREWARDS=$( SQL_REPORT "SELECT blockNum,Reward FROM mn_rewards WHERE blockNum BETWEEN ${STARTMNBLK} and ${ENDMNBLK};" )
-
-            _PAYLOAD="__Account: ${SHORTADDR}__
-Mkt Price: ${CURRENCY} ${NRGMKTPRICE}
-Masternode Collateral: ${MNCOLLATERAL} NRG
-Masternode reward: ${MNTOTALNRG} NRG
-${_MNREWARDS}"
-
+            _PAYLOAD="$( printf '%s\n%s\n%s\n%s\n%s' \
+              "__Account: ${SHORTADDR}__" \
+              "Market Price: ${CURRENCY} ${NRGMKTPRICE}" \
+              "Masternode Collateral: ${MNCOLLATERAL} NRG" \
+              "Masternode reward: ${MNTOTALNRG} NRG" \
+              "${_MNREWARDS}" )"
             # Post message
             PROCESS_NODE_MESSAGES "${mnShortAddress}" "mn_reward" "4" "${_PAYLOAD}" "" "${DISCORD_WEBHOOK_USERNAME}" "${DISCORD_WEBHOOK_AVATAR}"
 
