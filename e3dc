@@ -11,7 +11,6 @@ command_pattern_setup="setup [${service_pattern}]"
 command_pattern_start="start [${service_pattern}]"
 command_pattern_status='staking-status | status'
 env='.env'
-env_template='.env.template.env'
 help_description='Print this help message'
 help_message="\
 e3dc - a helper command for \`energi3-docker-compose\`, a dockerised Energi Core
@@ -38,8 +37,8 @@ Available commands:
     ${command_pattern_update}
         Update image(s) and recreate container(s).
         Version argument (i.e. v3.1.0) can be used to build images and create
-        containers with \`energi3\` version other than the one that is specified
-        in \`${env_template}\`
+        containers with Energi version other than the one that is specified in
+        \`${env}\`
 
 Available options:
     -?, -h, --help
@@ -74,14 +73,6 @@ check_max_arguments_count() {
   fi
 }
 
-check_env() {
-  if [ ! -s ${env} ]; then
-    printf "\`%s\` does not exist or is empty. Creating it from \`%s\`.\n" \
-      ${env} ${env_template}
-    cat ${env_template} >${env}
-  fi
-}
-
 print_help_message() {
   printf '%b' "\n${help_message}\n"
 }
@@ -101,7 +92,6 @@ case "${1}" in
   ;;
 apply-preimages | preimages)
   check_max_arguments_count ${#} 1 "${command_pattern_preimages}"
-  check_env
   ${stop}
   exit_code="${?}"
   ${run} --entrypoint '/bin/sh apply-preimages.sh' core
@@ -113,14 +103,12 @@ apply-preimages | preimages)
   ;;
 attach)
   check_max_arguments_count ${#} 1 "${command_pattern_attach}"
-  check_env
   ${exec} core energi3 --datadir /home/nrgstaker/.energicore3 attach
 
   exit ${?}
   ;;
 bootstrap-chaindata | chaindata)
   check_max_arguments_count ${#} 1 "${command_pattern_chaindata}"
-  check_env
   ${stop}
   exit_code="${?}"
   bootstrap_chaindata && ${up}
@@ -136,8 +124,6 @@ console | shell | terminal)
 
     exit 1
   fi
-
-  check_env
 
   case "${2}" in
   core)
@@ -171,7 +157,6 @@ setup)
   }
 
   check_max_arguments_count ${#} 2 "${command_pattern_setup}"
-  check_env
 
   case "${2}" in
   '' | all)
@@ -200,7 +185,6 @@ setup)
   ;;
 start)
   check_max_arguments_count ${#} 2 "${command_pattern_start}"
-  check_env
 
   case "${2}" in
   '' | all)
@@ -228,7 +212,6 @@ start)
   ;;
 staking-status | status)
   check_max_arguments_count ${#} 1 "${command_pattern_status}"
-  check_env
   ${exec} core sh energi-core-node-status.sh
 
   exit ${?}
@@ -281,37 +264,32 @@ update)
 
   for last_argument in "${@}"; do :; done
 
-  pattern_version_prefix='^ENERGI_VERSION='
   pattern_version_value='v[0-9]\+\.[0-9]\+\.[0-9]\+'
-  template_version=$( value_from_file \
-    "${pattern_version_prefix}" \
+  env_version="$( value_from_file \
+    '^ENERGI_VERSION=' \
     "${pattern_version_value}" \
-    "${env_template}" )
+    "${env}" )"
 
   case "${last_argument}" in
-  '' | all | core | monitor | update)
-    version="${template_version}"
-    ;;
+  '' | all | core | monitor | update) version="${env_version}" ;;
   *)
     version=$( printf '%s' \
       "${last_argument}" | grep "${pattern_version_value}" )
 
-    if [ -z "${version}" ] || [ "${version}" = '' ]; then
+    if [ -z "${version}" ] || [ "${version}" = '' ]
+    then
       printf 'Invalid version format!\n'
       printf 'Version must be formatted like vX.Y.Z (for example: v3.1.0).\n'
       printf 'Version provided: %s\n' "${last_argument}"
 
       exit 1
+    elif [ "${version}" != "${env_version}" ]
+    then
+      export ENERGI_VERSION="${version}"
     fi
     ;;
   esac
 
-  check_env
-  update_value_in_file \
-    "${pattern_version_prefix}" \
-    "${pattern_version_value}" \
-    "${version}" \
-    "${env}"
   pattern_monitor_image_prefix='^[[:space:]]*image: '
   pattern_monitor_tag_value='.*'
   update_value_in_file \
@@ -322,7 +300,6 @@ update)
       "${pattern_monitor_tag_value}" \
       'docker-compose.override.template.yml' )" \
     'docker-compose.override.yml'
-
   ${command}
 
   exit ${?}

@@ -79,11 +79,6 @@ To run Energi Gen 3 Core Node in a Docker container:
   mentioned
   [here (section "1.7. Firewall Rules")](https://wiki.energi.world/en/advanced/core-node-vps#h-17-firewall-rules);
 
-- optionally, to change the Docker Compose project name, `.env.template.env`
-  should be copied and renamed to `.env` and if needed the value for
-  [the CLI variable `COMPOSE_PROJECT_NAME`](https://docs.docker.com/compose/reference/envvars/#compose_project_name)
-  should be changed to the desired value; by default `.env` with the content of
-  `.env.template.env` will be created automatically;
 - optionally, the Energi Core Node Monitor container can be enabled;
   instructions on how to do it can be found in
   [`nodemon/ReadMe.md`](nodemon/ReadMe.md);
@@ -160,23 +155,22 @@ containers the command `./e3dc update` should be executed. Or
 only for the specified service.
 
 It is possible to build images and create containers for Energi Core Node
-versions other than the one specified in `.env.template.env`:
-`./e3dc update vX.Y.Z` or `./e3dc update core|monitor vX.Y.Z`. This may be
-especially useful for cases when a new version has been released but it has not
-been reflected in `.env.template.env` yet to update Energi Core Node (and
-Monitor) to the lateset version. Note that there is a chance that this command
-will fail (most probably because of an error while building Monitor image when
-the newest `energi3` veresion cannot be compiled using the Go version specified
-in `nodemon/Dockerfile`), and in such case the following commands should be
-executed:
+versions other than the one specified in `.env`: `./e3dc update vX.Y.Z` or
+`./e3dc update core|monitor vX.Y.Z`. This may be especially useful for cases
+when a new version has been released but it has not been reflected in `.env` yet
+to update Energi Core Node (and Monitor) to the lateset version.
+Note that there is a chance that this command will fail (most probably because of an error while
+building Monitor image when the newest Energi version cannot be compiled using
+the Go version specified in `nodemon/Dockerfile`), and in such case the
+following commands should be executed:
 
 1. `./e3dc start core` to start core container as the image for the newest Core
    version should be already built;
 2. `./e3dc update monitor` if Energi Core Node Monitor is used; this will use
-   the version that is specified in `.env.template.env`
+   the version that is specified in `.env`
 
-or `./e3dc update` to use Core and Monitor version specified in
-`.env.template.env` till isues are resolved in the repopsitory.
+or `./e3dc update` to use Core and Monitor version specified in `.env` till
+isues are resolved in the repopsitory.
 
 ## Helper script
 
