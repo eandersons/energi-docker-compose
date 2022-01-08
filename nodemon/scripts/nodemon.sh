@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #######################################################################
-# Copyright (c) 2020
+# Copyright (c) 2022
 # All rights reserved.
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
 #
@@ -20,7 +20,12 @@
 #   1.0.7  20200502  ZAlam Added reset functionality
 #   1.1.0  20200504  ZAlam First Public Release
 #   1.1.1  20200505  ZAlam Update email content
-#   1.1.2  20211208  ZAlam Energi Core Node repo change
+#   1.1.2  20200507  ZAlam Masternode ETA
+#   1.2.0  20200521  ZAlam name change to energi
+#   1.2.1  20201015  ZAlam Updated MN Reward time calculation
+#   1.3.0  20210208  ZAlam Update USRNAME & DATADIR; support all versions
+#   1.3.1  20211208  ZAlam Energi Core Node repo change
+#   1.3.5  20210101  ZAlam Exclude TTY executions & use correct ${ENERGI_EXEC} binary
 
 # Energi Core Node Monitor for `energi3-docker-compose`
 #
@@ -29,10 +34,10 @@
 # that is adjusted to use it with the dockerised Energi Core Node.
 
 INTERACTIVE=${INTERACTIVE_SETUP:-yes}
-source "nodemon_helper.sh"
+source nodemon_helper.sh
 
 # Set script version
-NODEMONVER=1.1.2
+NODEMONVER=1.3.5
 
  : '
 # Run this file
@@ -42,160 +47,202 @@ NODEMONVER=1.1.2
 ```
 '
 
- # Load parameters from external conf file
- if [[ -f /var/multi-masternode-data/nodebot/nodemon.conf ]]
- then
+# Load parameters from external conf file
+if [[ -f /var/multi-masternode-data/nodebot/nodemon.conf ]]
+then
   . /var/multi-masternode-data/nodebot/nodemon.conf
- else
+else
   SENDEMAIL=N
   SENDSMS=N
- fi
+fi
 
- # Which Timezone you want to see notices
- export TZ=UTC
+# Which Timezone you want to see notices
+export TZ=UTC
 
 function CTRL_C () {
   stty sane 2>/dev/null
   printf '\e[0m\n'
-  exit
 
+  exit
 }
 
- trap CTRL_C INT
+trap CTRL_C INT
 
- # Define simple variables.
- stty sane 2>/dev/null
- arg1="${1}"
- arg2="${2}"
- arg3="${3}"
- RE='^[0-9]+$'
- DISCORD_WEBHOOK_USERNAME_DEFAULT='Energi Node Monitor'
- DISCORD_WEBHOOK_AVATAR_DEFAULT='https://i.imgur.com/8WHSSa7s.jpg'
- DISCORD_TITLE_LIMIT=266
+# Define simple variables.
+stty sane 2>/dev/null
+arg1="${1}"
+arg2="${2}"
+arg3="${3}"
+RE='^[0-9]+$'
+DISCORD_WEBHOOK_USERNAME_DEFAULT='Energi Node Monitor'
+DISCORD_WEBHOOK_AVATAR_DEFAULT='https://i.imgur.com/8WHSSa7s.jpg'
+DISCORD_TITLE_LIMIT=266
 
- # NRG Parameters
- NRGAPI="https://explorer.energi.network/api"
- GITAPI_URL="https://api.github.com/repos/energicryptocurrency/energi/releases/latest"
+# NRG Parameters
+GITAPI_URL="https://api.github.com/repos/energicryptocurrency/energi/releases/latest"
+# Set variables
+MNTOTALNRG=0
+# get username; exclude testnet
+USRNAME=$( find /home -name nodekey  2>&1 \
+  | grep -v "Permission denied" \
+  | grep -v testnet \
+  | awk -F\/ '{print $3}' )
 
- # Set variables
- MNTOTALNRG=0
- USRNAME=$( find /home -name nrgstaker 2>&1 | grep -v "Permission denied" | awk -F\/ '{print $3}' )
- export PATH=$PATH:/home/${USRNAME}/energi3/bin
- LOGDIR="/home/${USRNAME}/log"
- LOGFILE="${LOGDIR}/nodemon.log"
+if [[ -z ${USRNAME} ]]
+then
+  USRNAME=$( basename "${STAKER_HOME}" )
+fi
 
- if [[ -z "${CURRENCY:=$ECNM_CURRENCY}" ]]
- then
-   CURRENCY=USD
- fi
+ENERGI_EXEC=energi3
+printf 'Using binary: %s\n' "${ENERGI_EXEC}"
 
- # Set colors
- BLUE=$( tput setaf 4 )
- RED=$( tput setaf 1 )
- GREEN=$( tput setaf 2 )
- YELLOW=$( tput setaf 2 )
- NC=$( tput sgr0 )
+LOGDIR="${STAKER_HOME}/log"
+LOGFILE="${LOGDIR}/nodemon.log"
 
- # Script can be run as root or nrgstaker
- if [[ $EUID = 0 ]]
+if [[ -z "${CURRENCY:=$ECNM_CURRENCY}" ]]
+then
+  CURRENCY=USD
+fi
+
+# Set colors
+BLUE=$( tput setaf 4 )
+RED=$( tput setaf 1 )
+GREEN=$( tput setaf 2 )
+YELLOW=$( tput setaf 2 )
+NC=$( tput sgr0 )
+
+# Script can be run as root or nrgstaker
+if [[ $EUID != 0 ]]
+then
+  ISSUDOER=$( getent group sudo | grep "${USRNAME}" )
+
+  if [ -z "${ISSUDOER}" ]
   then
-    SUDO=""
-  else
-    ISSUDOER=`getent group sudo | grep ${USRNAME}`
-    if [ ! -z "${ISSUDOER}" ]
-    then
-      SUDO='sudo'
-    else
-      echo "User ${USRNAME} does not have sudo permissions."
-      echo "Run ${BLUE}sudo ls -l${NC} to set permissions if you know the user ${USRNAME} has sudo previlidges"
-      echo "and then rerun the script"
-      echo "Exiting script..."
-      sleep 3
+    printf "User \`%s\` does not have sudo permissions.\n" "${USRNAME}"
+    printf 'Run %ssudo ls -l%s to set permissions ' "${BLUE}" "${NC}"
+    printf "if you know the user \`%s\` has sudo privileges " "${USRNAME}"
+    printf 'and then rerun the script\nExiting script...\n'
+    sleep 3
 
-      exit 1
-    fi
+    exit 1
   fi
+fi
 
- DATADIR=/home/nrgstaker/.energicore3
+DATADIR="${STAKER_HOME}/.energicore3"
 
- # Attach command
- COMMAND="energi3 ${ARG} --datadir ${DATADIR} attach --exec "
- NODEAPICOMMAND="energi3 attach https://nodeapi.energi.network --exec "
+if [[ ! -f ${DATADIR}/energi3/nodekey ]]
+then
+    printf "Cannot determine \`DATADIR\`\n"
+    DATADIR=''
+fi
 
- # version arg.
- VERSION_OUTPUT=0
- if [[ "${arg1}" == 'version' ]]
+# Attach command
+if [[ -z ${DATADIR} ]]
+then
+  COMMAND="${ENERGI_EXEC} ${ARG} attach --exec "
+else
+  COMMAND="${ENERGI_EXEC} ${ARG} --datadir ${DATADIR} attach --exec "
+fi
+
+if [[ ${ARG} == '--testnet' ]]
+then
+  NODEAPICOMMAND="${ENERGI_EXEC} attach https://nodeapi.test.energi.network --exec "
+  NRGAPI="https://explorer.test.energi.network/api"
+else
+  NODEAPICOMMAND="${ENERGI_EXEC} attach https://nodeapi.energi.network --exec "
+  NRGAPI="https://explorer.energi.network/api"
+fi
+
+if [[ "${arg1}" == 'version' ]]
 then
   echo "Version: ${NODEMONVER}"
   exit 0
 fi
- if [[ "${arg2}" == 'version' ]]
-then
-  echo "Version: ${NODEMONVER}"
-  exit 0
-fi
- if [[ "${arg3}" == 'version' ]]
+
+if [[ "${arg2}" == 'version' ]]
 then
   echo "Version: ${NODEMONVER}"
   exit 0
 fi
 
- # debug arg.
- DEBUG_OUTPUT=0
- if [[ "${arg1}" == 'debug' ]]
+if [[ "${arg3}" == 'version' ]]
 then
-  DEBUG_OUTPUT=1
+  echo "Version: ${NODEMONVER}"
+  exit 0
 fi
- if [[ "${arg2}" == 'debug' ]]
-then
-  DEBUG_OUTPUT=1
-fi
- if [[ "${arg3}" == 'debug' ]]
+
+# debug arg.
+DEBUG_OUTPUT=0
+
+if [[ "${arg1}" == 'debug' ]]
 then
   DEBUG_OUTPUT=1
 fi
 
- # reset arg.
- RESET=n
- if [[ "${arg1}" == 'reset' ]]
+if [[ "${arg2}" == 'debug' ]]
 then
-  RESET=y
+  DEBUG_OUTPUT=1
 fi
- if [[ "${arg2}" == 'reset' ]]
+
+if [[ "${arg3}" == 'debug' ]]
 then
-  RESET=y
+  DEBUG_OUTPUT=1
 fi
- if [[ "${arg3}" == 'reset' ]]
+
+# reset arg.
+RESET=n
+
+if [[ "${arg1}" == 'reset' ]]
 then
   RESET=y
 fi
 
- # test arg.
- TEST_OUTPUT=0
- if [[ "${arg1}" == 'test' ]]
+if [[ "${arg2}" == 'reset' ]]
 then
-  TEST_OUTPUT=1
+  RESET=y
 fi
- if [[ "${arg2}" == 'test' ]]
+
+if [[ "${arg3}" == 'reset' ]]
 then
-  TEST_OUTPUT=1
+  RESET=y
 fi
- if [[ "${arg3}" == 'test' ]]
+
+TEST_OUTPUT=0
+
+if [[ "${arg1}" == 'test' ]]
 then
   TEST_OUTPUT=1
 fi
 
- # Set defaults.
- # RAM.
- if [[ -z "${LOW_MEM_WARN_MB}" ]]
+if [[ "${arg2}" == 'test' ]]
+then
+  TEST_OUTPUT=1
+fi
+
+if [[ "${arg3}" == 'test' ]]
+then
+  TEST_OUTPUT=1
+fi
+
+# Get bc.
+if [ ! -x "$( command -v bc )" ]
+then
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -yq bc
+fi
+
+# Set defaults.
+# RAM.
+if [[ -z "${LOW_MEM_WARN_MB}" ]]
 then
   LOW_MEM_WARN_MB=850
 fi
- if [[ -z "${LOW_MEM_WARN_PERCENT}" ]]
+
+if [[ -z "${LOW_MEM_WARN_PERCENT}" ]]
 then
   LOW_MEM_WARN_PERCENT=2
 fi
- if [[ -z "${LOW_MEM_ERROR_MB}" ]]
+
+if [[ -z "${LOW_MEM_ERROR_MB}" ]]
 then
   LOW_MEM_ERROR_MB=725
 fi
@@ -345,45 +392,46 @@ fi
  mnTotalReward INTEGER
 );"
 
- # Network Difficulty table.
- SQL_QUERY "CREATE TABLE IF NOT EXISTS net_difficulty (
- blockNum INTEGER PRIMARY KEY,
- difficulty INTEGER NOT NULL
+# Network Difficulty table.
+SQL_QUERY "CREATE TABLE IF NOT EXISTS net_difficulty (
+  blockNum INTEGER PRIMARY KEY,
+  difficulty INTEGER NOT NULL
 );"
 
- # Insert seed data; give poll 5 blocks from current
- CURRENTBLKNUM=$( ${COMMAND} "nrg.blockNumber" 2>/dev/null | jq -r '.' )
- CURRENTBLKNUM=$( echo "${CURRENTBLKNUM} - 5" | bc -l )
- if [[ -S ${DATADIR}/energi3.ipc ]] && [[ ${CURRENTBLKNUM} -gt 0 ]]
- then
+# Insert seed data; give poll 5 blocks from current
+CURRENTBLKNUM=$( ${COMMAND} "nrg.blockNumber" 2>/dev/null | jq -r '.' )
+CURRENTBLKNUM=$( printf '%s - 5\n' "${CURRENTBLKNUM}" | bc -l )
+
+if [[ -S ${DATADIR}/energi3.ipc ]] && [[ ${CURRENTBLKNUM} -gt 0 ]]
+then
   SQL_QUERY "INSERT OR IGNORE INTO variables values ( 'last_block_checked', '${CURRENTBLKNUM}' );"
- else
-  echo ${DATADIR}
-  echo "${COMMAND}"
-  echo $( ${COMMAND} "nrg.blockNumber" 2>/dev/null | jq -r '.' )
-  echo ${CURRENTBLKNUM}
-  echo "energi3 is not running.  Exiting nodemon."
+else
+  printf '%s\n' "${DATADIR}"
+  printf '%s\n' "${COMMAND}"
+  printf '%s\n' "$( ${COMMAND} "nrg.blockNumber" 2>/dev/null | jq -r '.' )"
+  printf '%s\n' "${CURRENTBLKNUM}"
+  printf "\`%s\` is not running. Exiting nodemon.\n" "${ENERGI_EXEC}"
 
   exit 1
- fi
+fi
 
- # Daemon_bin_name URL_to_logo Bot_name
- DAEMON_BIN_LUT="
-energi3 https://s2.coinmarketcap.com/static/img/coins/128x128/3218.png Energi Monitor
+# Daemon_bin_name URL_to_logo Bot_name
+DAEMON_BIN_LUT="
+${ENERGI_EXEC} https://s2.coinmarketcap.com/static/img/coins/128x128/3218.png Energi Monitor
 "
 
- # Daemon_bin_name minimum_balance_to_stake staking_reward mn_reward_factor confirmations cooloff_seconds networkhashps_multiplier ticker_name blocktime_seconds
- DAEMON_BALANCE_LUT="
-energi3 1 2.28 0.914 101 3600 0.000001 NRG 60
+# Daemon_bin_name minimum_balance_to_stake staking_reward mn_reward_factor confirmations cooloff_seconds networkhashps_multiplier ticker_name blocktime_seconds
+DAEMON_BALANCE_LUT="
+${ENERGI_EXEC} 1 2.28 0.914 101 3600 0.000001 NRG 60
 "
 
- # Add timestamp to Log
- function log {
-    echo "[$(date --rfc-3339=seconds)]: $*" >> $LOGFILE
+# Add timestamp to Log
+log() {
+  echo "[$(date --rfc-3339=seconds)]: $*" >> $LOGFILE
 }
 
- # Convert seconds to days, hours, minutes, seconds.
- DISPLAYTIME () {
+# Convert seconds to days, hours, minutes, seconds.
+DISPLAYTIME() {
   # Round up the time.
   local T=0
   T=$( printf '%.*f\n' 0 "${1}" )
@@ -519,20 +567,17 @@ SYSTEMD_CONF
 }
 
 RESET_NODEMON () {
-
-  echo
-  echo "This will remove the database and the exiting nodemon script"
-  echo
+  printf '\nThis will remove the database and the exiting nodemon script\n\n'
   REPLY=''
   read -p "Do you want to completely remove nodemon? y/[n]: "
   REPLY=${REPLY,,} # tolower
+
   if [[ "${REPLY}" == "n" ]] || [[ -z "${REPLY}" ]]
   then
-    echo
-    echo "Exiting script without removing nodemon..."
-    echo
+    printf '\nExiting script without removing nodemon...\n\n'
     exit 0
   fi
+
   echo
   echo "Removing nodemon database"
   sudo rm -rf /var/multi-masternode-data/nodebot
@@ -561,6 +606,7 @@ RESET_NODEMON () {
   then
     DISCORD_WEBHOOK_USERNAME="${DISCORD_WEBHOOK_USERNAME_DEFAULT}"
   fi
+
   # Avatar to show.
   if [[ -z "${DISCORD_WEBHOOK_AVATAR}" ]]
   then
@@ -572,10 +618,12 @@ RESET_NODEMON () {
     SERVER_INFO="$( message_date )"
     # Show Server Alias.
     SERVER_ALIAS=$( SQL_QUERY "SELECT value FROM variables WHERE key = 'server_alias';" )
+
     if [[ -z "${SERVER_ALIAS}" ]]
     then
       SERVER_ALIAS=$( hostname )
     fi
+
     if [[ ! -z "${SERVER_ALIAS}" ]]
     then
       SERVER_INFO="${SERVER_INFO}
@@ -584,10 +632,12 @@ RESET_NODEMON () {
 
     # Show IP Address.
     SHOW_IP=$( SQL_QUERY "SELECT value FROM variables WHERE key = 'show_ip';" )
+
     if [[ "${SHOW_IP}" -gt 0 ]]
     then
       IP_ADDRESS=$( ip_address )
     fi
+
     if [[ ! -z "${IP_ADDRESS}" ]]
     then
       SERVER_INFO="${SERVER_INFO}
@@ -598,13 +648,14 @@ RESET_NODEMON () {
   # Replace new line with \n
   SERVER_INFO=$( echo "${SERVER_INFO}" | awk '{printf "%s\\n", $0}' )
   TITLE=$( echo "${TITLE}" | tr '\n' ' ' )
-
   ALT_DESC=''
+
   while read -r LINE
   do
     CURRENT_CHAR_COUNT=$( echo "${ALT_DESC}" | tail -n 1 | wc -c )
     NEW_LINE_CHAR_COUNT=$( echo "${LINE}\n " | wc -c )
     NEW_TOTAL=$(( CURRENT_CHAR_COUNT + NEW_LINE_CHAR_COUNT ))
+
     if [[ "${NEW_TOTAL}" -lt "${DISCORD_TITLE_LIMIT}" ]]
     then
       ALT_DESC="${ALT_DESC}${LINE}\n"
@@ -656,11 +707,13 @@ PAYLOAD
   if [[ ! -z "${OUTPUT}" ]]
   then
     # Wait if we got throttled.
-    MS_WAIT=$( echo "${OUTPUT}" | jq -r '.retry_after' 2>/dev/null )
+    MS_WAIT=$( printf '%s' "${OUTPUT}" | jq -r '.retry_after' 2>/dev/null )
+
     if [[ ! -z "${MS_WAIT}" ]]
     then
-      SECONDS_WAIT=$( printf "%.1f\n" "$( echo "scale=3;${MS_WAIT}/1000" | bc -l )" )
-      SECONDS_WAIT=$( echo "${SECONDS_WAIT} + 0.1" | bc -l )
+      SECONDS_WAIT=$( printf "%.1f" \
+        "$( printf 'scale=3; %s / 1000\n' "${MS_WAIT}" | bc -l )" )
+      SECONDS_WAIT=$( printf '%s + 0.1\n' "${SECONDS_WAIT}" | bc -l )
       sleep "${SECONDS_WAIT}"
       OUTPUT=$( curl -H "Content-Type: application/json" -s -X POST "${URL}" -d "${_PAYLOAD}" | sed '/^[[:space:]]*$/d' )
     fi
@@ -690,7 +743,7 @@ DISCORD_WEBHOOK_URL_PROMPT () {
 
   while :
   do
-    printf '\n%ss webhook url: ' "${TEXT_A}"
+    printf "\n%s's webhook url: " "${TEXT_A}"
     override_read "${DISCORD_WEBHOOK_URL}"
     DISCORD_WEBHOOK_URL="${REPLY:-${DISCORD_WEBHOOK_URL}}"
 
@@ -715,6 +768,7 @@ DISCORD_WEBHOOK_URL_PROMPT () {
         fi
       else
         printf '%s\n' "${TOKEN}"
+
         break
       fi
     fi
@@ -738,34 +792,45 @@ DISCORD_WEBHOOK_URL_PROMPT () {
   echo 'pings in the same channel.'
 
   # Errors.
-  DISCORD_WEBHOOK_URL=$( SQL_QUERY "SELECT value FROM variables WHERE key = 'discord_webhook_url_error';" )
-  DISCORD_WEBHOOK_URL_PROMPT "error" "${DISCORD_WEBHOOK_ERROR:-${DISCORD_WEBHOOK_URL}}"
+  DISCORD_WEBHOOK_URL=$( SQL_QUERY \
+    "SELECT value FROM variables WHERE key = 'discord_webhook_url_error';" )
+  DISCORD_WEBHOOK_URL_PROMPT \
+    "error" \
+    "${DISCORD_WEBHOOK_ERROR:-${DISCORD_WEBHOOK_URL}}"
   SEND_ERROR "Test Error"
 
   # Warnings.
-  DISCORD_WEBHOOK_URL=$( SQL_QUERY "SELECT value FROM variables WHERE key = 'discord_webhook_url_warning';" )
-  DISCORD_WEBHOOK_URL_PROMPT "warning" "${DISCORD_WEBHOOK_WARNING:-${DISCORD_WEBHOOK_URL}}"
+  DISCORD_WEBHOOK_URL=$( SQL_QUERY \
+    "SELECT value FROM variables WHERE key = 'discord_webhook_url_warning';" )
+  DISCORD_WEBHOOK_URL_PROMPT \
+    "warning" \
+    "${DISCORD_WEBHOOK_WARNING:-${DISCORD_WEBHOOK_URL}}"
   SEND_WARNING "Test Warning"
 
   # Info.
-  DISCORD_WEBHOOK_URL=$( SQL_QUERY "SELECT value FROM variables WHERE key = 'discord_webhook_url_information';" )
-  DISCORD_WEBHOOK_URL_PROMPT "information" "${DISCORD_WEBHOOK_INFORMATION:-${DISCORD_WEBHOOK_URL}}"
+  DISCORD_WEBHOOK_URL=$( SQL_QUERY \
+    "SELECT value FROM variables WHERE key = 'discord_webhook_url_information';" )
+  DISCORD_WEBHOOK_URL_PROMPT \
+    "information" \
+    "${DISCORD_WEBHOOK_INFORMATION:-${DISCORD_WEBHOOK_URL}}"
   SEND_INFO "Test Info"
 
   # Success.
-  DISCORD_WEBHOOK_URL=$( SQL_QUERY "SELECT value FROM variables WHERE key = 'discord_webhook_url_success';" )
-  DISCORD_WEBHOOK_URL_PROMPT "success" "${DISCORD_WEBHOOK_SUCCESS:-${DISCORD_WEBHOOK_URL}}"
+  DISCORD_WEBHOOK_URL=$( SQL_QUERY \
+    "SELECT value FROM variables WHERE key = 'discord_webhook_url_success';" )
+  DISCORD_WEBHOOK_URL_PROMPT \
+    "success" \
+    "${DISCORD_WEBHOOK_SUCCESS:-${DISCORD_WEBHOOK_URL}}"
   SEND_SUCCESS "Test Success"
 }
 
- # Send the data to telegram via bot.
- TELEGRAM_SEND () {
+# Send the data to telegram via bot.
+TELEGRAM_SEND() {
 (
   local SERVER_INFO
   local SHOW_IP
   local SERVER_ALIAS
   local _PAYLOAD
-
   local TOKEN="${1}"
   local CHAT_ID="${2}"
   local TITLE="${3}"
@@ -808,38 +873,38 @@ DISCORD_WEBHOOK_URL_PROMPT () {
   then
     SERVER_INFO="$( message_date )"
     SHOW_IP=$( SQL_QUERY "SELECT value FROM variables WHERE key = 'show_ip';" )
+
     if [[ "${SHOW_IP}" -gt 0 ]]
     then
-      SERVER_INFO=$( echo -ne "${SERVER_INFO}\n - " ; ip_address )
+      SERVER_INFO=$( printf "%s\n - " "${SERVER_INFO}"; ip_address )
     fi
-    SERVER_ALIAS=$( SQL_QUERY "SELECT value FROM variables WHERE key = 'server_alias';" )
+
+    SERVER_ALIAS=$( SQL_QUERY \
+      "SELECT value FROM variables WHERE key = 'server_alias';" )
+
     if [[ -z "${SERVER_ALIAS}" ]]
     then
       # shellcheck disable=SC2028
-      SERVER_INFO=$( echo -ne "${SERVER_INFO}\n - " ; hostname )
+      SERVER_INFO=$( printf "%s\n - " "${SERVER_INFO}"; hostname )
     else
-      SERVER_INFO=$( echo -ne "${SERVER_INFO}\n - ${SERVER_ALIAS}" )
+      SERVER_INFO=$( printf "%s\n - %s\n" "${SERVER_INFO}" "${SERVER_ALIAS}" )
     fi
   fi
 
-  _PAYLOAD="text=<b>${TITLE}</b>
-<i>${SERVER_INFO}</i>
-${MESSAGE}"
-
+  _PAYLOAD=$( printf 'text=<b>%s</b>\n<i>%s</i>\n%s' \
+    "${TITLE}" "${SERVER_INFO}" "$MESSAGE" )
   URL="https://api.telegram.org/bot$TOKEN/sendMessage"
-  TELEGRAM_MSG=$( curl -s -X POST "${URL}" -d "chat_id=${CHAT_ID}&parse_mode=html" -d "${_PAYLOAD}" | sed '/^[[:space:]]*$/d' )
-  IS_OK=$( echo "${TELEGRAM_MSG}" | jq '.ok' )
-echo ${URL}
-echo ${CHAT_ID}
-echo ${_PAYLOAD}
+  TELEGRAM_MSG=$( curl -s -X POST "${URL}" \
+    -d "chat_id=${CHAT_ID}&parse_mode=html" -d "${_PAYLOAD}" \
+    | sed '/^[[:space:]]*$/d' )
+  IS_OK=$( printf '%s' "${TELEGRAM_MSG}" | jq '.ok' )
+
   if [[ "${IS_OK}" != true ]]
   then
-    echo "Telegram Error"
-    echo "${TELEGRAM_MSG}" | jq '.'
-    echo "Payload:"
-    echo "${_PAYLOAD}"
-    echo "-"
+    printf "Telegram Error\n%s\nPayload: \n%s\n-\n" \
+      "$( "${TELEGRAM_MSG}" | jq '.' )" "${_PAYLOAD}"
   fi
+
   # Rate limit this function.
   sleep 0.3
 )
@@ -879,7 +944,7 @@ echo ${_PAYLOAD}
         echo "Could not get a response from Telegram Bot."
         echo "Login to Telegram and post a message to the bot."
 
-        if [[ ${interactive:-'y'} == 'n' ]]
+        if ! value_to_bool "${interactive:-'yes'}"
         then
           REPLY=check
         else
@@ -1095,8 +1160,7 @@ echo ${_PAYLOAD}
   fi
 }
 
- SEND_EMAIL () {
-
+SEND_EMAIL () {
   # Temp Files
   TOMAILFILE=/tmp/reward_email.txt
 
@@ -1105,8 +1169,8 @@ echo ${_PAYLOAD}
   echo "From: ${SENDTOEMAIL}" >> $TOMAILFILE
   echo "Subject: NRG-${SHORTADDR} - ${1} " >> $TOMAILFILE
   echo ""  >> $TOMAILFILE
-
   echo "Market Price:    ${CURRENCY} ${NRGMKTPRICE}" >> $TOMAILFILE
+
   if [[ ${STAKERWD} == Y ]]
   then
     echo "New Balance: ${ACCTBALANCE} NRG" >> $TOMAILFILE
@@ -1124,14 +1188,11 @@ echo ${_PAYLOAD}
 
   # Send email
   log "${SHORTADDR}: Send email"
-
   ssmtp ${SENDTOEMAIL} < $TOMAILFILE
-
   rm $TOMAILFILE
 }
 
- SEND_SMS () {
-
+SEND_SMS () {
     # Temp Files
     TOSMSFILE=/tmp/reward_sms.txt
 
@@ -1140,6 +1201,7 @@ echo ${_PAYLOAD}
     echo "From: ${SENDTOEMAIL}" >> $TOSMSFILE
     echo "Subject: NRG-${SHORTADDR}" >> $TOSMSFILE
     echo ""  >> $TOSMSFILE
+
     if [[ ${STAKERWD} == Y ]]
     then
       echo "Rwd: ${REWARDAMT}, Price: ${CURRENCY} ${NRGMKTPRICE}" >> $TOSMSFILE
@@ -1150,13 +1212,11 @@ echo ${_PAYLOAD}
 
     # Send email
     log "${SHORTADDR}: Send SMS"
-
     ssmtp ${SENDTOMOBILE}@${SENDTOGATEWAY} < $TOSMSFILE
-
     rm $TOSMSFILE
 }
 
- PROCESS_MESSAGES () {
+PROCESS_MESSAGES () {
   local ERRORS=''
   local MESSAGE=''
   local NAME=${1}
@@ -1169,22 +1229,26 @@ echo ${_PAYLOAD}
   local DISCORD_WEBHOOK_USERNAME=${8}
   local DISCORD_WEBHOOK_AVATAR=${9}
 
-
   # Get past events.
   UNIX_TIME=$( date -u +%s )
   MESSAGE_PAST=$( SQL_QUERY "SELECT start_time,last_ping_time,message FROM system_log WHERE name == '${NAME}'; " )
   START_TIME=$( echo "${MESSAGE_PAST}" | cut -d \| -f1 )
+
   if [[ ! ${START_TIME} =~ ${RE} ]]
   then
     START_TIME="${UNIX_TIME}"
   fi
+
   LAST_PING_TIME=$( echo "${MESSAGE_PAST}" | cut -d \| -f2 )
+
   if [[ ! ${LAST_PING_TIME} =~ ${RE} ]]
   then
     LAST_PING_TIME='0'
   fi
+
   MESSAGE_PAST=$( echo "${MESSAGE_PAST}" | cut -d \| -f3 )
-  SECONDS_SINCE_PING="$( echo "${UNIX_TIME} - ${LAST_PING_TIME}" | bc -l )"
+  SECONDS_SINCE_PING="$( printf '%s - %s\n' "${UNIX_TIME}" "${LAST_PING_TIME}" \
+    | bc -l )"
 
   # Send recovery message.
   if [[ -z "${MESSAGE_ERROR}" ]] && [[ -z "${MESSAGE_WARNING}" ]] && [[ ! -z "${MESSAGE_PAST}" ]] && [[ ! -z "${RECOVERED_MESSAGE_SUCCESS}" ]]
@@ -1253,10 +1317,11 @@ echo ${_PAYLOAD}
   # Write to the database.
   if [[ -n "${ERRORS}" ]]
   then
-    printf '%s\n' "${ERRORS}" >/dev/stderr
+    printf '%s\n' "${ERRORS}" >/dev/tty
   elif [[ "${TEST_OUTPUT}" -eq 0 ]] && [[ ! -z "${MESSAGE}" ]]
   then
-    SQL_QUERY "REPLACE INTO system_log (start_time,last_ping_time,name,message) VALUES ('${START_TIME}','${UNIX_TIME}','${NAME}','${MESSAGE}');"
+    SQL_QUERY "REPLACE INTO system_log (start_time,last_ping_time,name,message)
+      VALUES ('${START_TIME}','${UNIX_TIME}','${NAME}','${MESSAGE}');"
   fi
 }
 
@@ -1274,7 +1339,9 @@ echo ${_PAYLOAD}
 
   # Get past events.
   UNIX_TIME=$( date -u +%s )
-  MESSAGE_PAST=$( SQL_QUERY "SELECT start_time,last_ping_time,message FROM node_log WHERE conf_loc == '${DATADIR}' AND type == '${TYPE}'; " )
+  MESSAGE_PAST=$( SQL_QUERY \
+    "SELECT start_time,last_ping_time,message
+    FROM node_log WHERE conf_loc == '${DATADIR}' AND type == '${TYPE}'; " )
   START_TIME=$( echo "${MESSAGE_PAST}" | head -n1 | cut -d \| -f1 )
   if [[ ! ${START_TIME} =~ ${RE} ]]
   then
@@ -1286,7 +1353,8 @@ echo ${_PAYLOAD}
     LAST_PING_TIME='0'
   fi
   MESSAGE_PAST=$( echo "${MESSAGE_PAST}" | cut -d \| -f3 )
-  SECONDS_SINCE_PING="$( echo "${UNIX_TIME} - ${LAST_PING_TIME}" | bc -l )"
+  SECONDS_SINCE_PING="$( printf '%s - %s\n' "${UNIX_TIME}" "${LAST_PING_TIME}" \
+    | bc -l )"
 
   # Send message out.
   ERRORS=''
@@ -1392,7 +1460,7 @@ echo ${_PAYLOAD}
     then
       SQL_QUERY "REPLACE INTO variables (key,value) VALUES ('last_login_time_check','${UNIX_TIME}');"
     fi
-  done <<< "$( grep 'port' /var/log/auth.log | grep -iv 'CRON\|preauth\|Invalid[[:space:]]user\|user[[:space:]]unknown\|major[[:space:]]versions[[:space:]]differ\|Failed[[:space:]]password\|authentication[[:space:]]failure\|refused[[:space:]]connect\|ignoring[[:space:]]max\|not[[:space:]]receive[[:space:]]identification\|[[:space:]]sudo\|[[:space:]]su\|Bad[[:space:]]protocol\|Disconnected[[:space:]]from[[:space:]]user\|Failed[[:space:]]none' )"
+  done <<< "$( grep 'port' /var/log/auth.log | grep -iv 'CRON\|TTY\|preauth\|Invalid[[:space:]]user\|user[[:space:]]unknown\|major[[:space:]]versions[[:space:]]differ\|Failed[[:space:]]password\|authentication[[:space:]]failure\|refused[[:space:]]connect\|ignoring[[:space:]]max\|not[[:space:]]receive[[:space:]]identification\|[[:space:]]sudo\|[[:space:]]su\|Bad[[:space:]]protocol\|Disconnected[[:space:]]from[[:space:]]user\|disconnected[[:space:]]on[[:space:]]user\|Failed[[:space:]]none' | tail -1 )"
 }
 
  CHECK_DISK () {
@@ -1770,14 +1838,15 @@ REPORT_INFO_ABOUT_NODE () {
   MNINFO=${5}
   GETBALANCE=${6}
   GETTOTALBALANCE=${7}
-  GETCONNECTIONCOUNT=${8}
-  GETBLOCKCOUNT=${9}
-  UPTIME=${10}
-  UPTIME_MONITOR=${11}
-  DAEMON_PID=${12}
-  NETWORKHASHPS=${13}
-  MNWIN=${14}
-  VERSION=${15}
+  STAKING=${8}
+  GETCONNECTIONCOUNT=${9}
+  GETBLOCKCOUNT=${10}
+  UPTIME=${11}
+  UPTIME_MONITOR=${12}
+  DAEMON_PID=${13}
+  NETWORKHASHPS=${14}
+  MNWIN=${15}
+  VERSION=${16}
 
   if [[ -z "${USRNAME}" ]]
   then
@@ -1792,7 +1861,8 @@ REPORT_INFO_ABOUT_NODE () {
   DISCORD_WEBHOOK_AVATAR=''
   DISCORD_WEBHOOK_USERNAME=''
   EXTRA_INFO=$( echo "${DAEMON_BIN_LUT}" | grep -E "^${DAEMON_BIN} " )
-  if [[ ! -z "${EXTRA_INFO}" ]]
+
+  if [[ -n "${EXTRA_INFO}" ]]
   then
     DISCORD_WEBHOOK_AVATAR=$( echo "${EXTRA_INFO}" | cut -d ' ' -f2 )
     DISCORD_WEBHOOK_USERNAME=$( echo "${EXTRA_INFO}" | cut -d ' ' -f3- )
@@ -1807,9 +1877,9 @@ REPORT_INFO_ABOUT_NODE () {
   STAKE_REWARD_UPPER=0
   BLOCKTIME_SECONDS=60
   UPTIME_HUMAN=$( DISPLAYTIME "${UPTIME}" )
-
   EXTRA_INFO=$( echo "${DAEMON_BALANCE_LUT}" | grep -E "^${DAEMON_BIN} " )
-  if [[ ! -z "${EXTRA_INFO}" ]]
+
+  if [[ -n "${EXTRA_INFO}" ]]
   then
     MIN_STAKE=$( echo "${EXTRA_INFO}" | cut -d ' ' -f2 )
     STAKE_REWARD=$( echo "${EXTRA_INFO}" | cut -d ' ' -f3 )
@@ -1848,6 +1918,7 @@ REPORT_INFO_ABOUT_NODE () {
 
   # save miner in array
   CHKBLOCK=${LASTCHKBLOCK}
+
   while [[ $( echo "$CHKBLOCK < $CURRENTBLKNUM" | bc -l ) -eq 1 ]]
   do
     MINER[${CHKBLOCK}]=$( ${COMMAND} "nrg.getBlock($CHKBLOCK).miner" 2>/dev/null | jq -r '.' | tr '[:upper:]' '[:lower:]' )
@@ -1856,21 +1927,24 @@ REPORT_INFO_ABOUT_NODE () {
 
   # Get total network difficulty
   NDCHKBLOCK=${LASTCHKBLOCK}
+
   while [[ $( echo "$NDCHKBLOCK < $CURRENTBLKNUM" | bc -l ) -eq 1 ]]
   do
    DIFFICULTY=$( ${COMMAND} "nrg.getBlock($NDCHKBLOCK).difficulty" 2>/dev/null )
    SQL_QUERY "INSERT INTO net_difficulty (blockNum, difficulty) VALUES ('${NDCHKBLOCK}', '${DIFFICULTY}');"
    ((NDCHKBLOCK++))
   done
-  # Keep last 120 rows
-  SQL_QUERY "DELETE FROM net_difficulty WHERE blockNum NOT IN (SELECT blockNum FROM net_difficulty ORDER BY blockNum DESC LIMIT 120 );"
 
+  # Keep last 120 rows
+  SQL_QUERY "DELETE FROM net_difficulty WHERE blockNum NOT IN (
+    SELECT blockNum FROM net_difficulty ORDER BY blockNum DESC LIMIT 120
+  );"
   # Set parameters
   GETTOTALBALANCE=0
   GETBALANCE=0
   ACCTBALANCE=0
   NRGMKTPRICE=''
-  STAKING=0
+  STAKING=${STAKING:-0}
   MASTERNODE=0
   NETWORKDIFF=0
 
@@ -1906,23 +1980,22 @@ REPORT_INFO_ABOUT_NODE () {
         mnShortAddress=''
         isActiveMn="false"
         isAliveMn="false"
-
       else
         # ADDR is a masternode
         MASTERNODE=1
-
         # Assume NOT Active (inactive)
         MNINFO=0
-
         # Set for reporting
         mnShortAddress=${SHORTADDR}
 
         isActiveMn=$( ${COMMAND} "masternode.masternodeInfo('$ADDR').isActive" 2>/dev/null | jq '.' )
+
         if [[ "${isActiveMn}" == true ]]
         then
           # Not Alive (Offline)
           MNINFO=1
           isAliveMn=$( ${COMMAND} "masternode.masternodeInfo('$ADDR').isAlive" 2>/dev/null | jq '.' )
+
           if [[ "${isAliveMn}" == true ]]
           then
             # Masternode Alive and Active (Alive)
@@ -1942,8 +2015,7 @@ REPORT_INFO_ABOUT_NODE () {
       then
         STAKERWD=Y
         REWARDTIME=$( ${COMMAND} "nrg.getBlock($CHKBLOCK).timestamp" 2>/dev/null )
-
-        market_price
+        market_price "${REWARDTIME}"
         # No way to determine at the time. Assume default
         REWARDAMT=2.28
         SQL_QUERY "INSERT INTO stake_rewards (stakeAddress, rewardTime, blockNum, Reward, balance, nrgPrice)
@@ -2033,15 +2105,16 @@ REPORT_INFO_ABOUT_NODE () {
 
           market_price
           # Add rewards for block
-          BLOCKSUMWEI=$( printf '%s' "$TXLSTINT" | jq -r '.result | map(.value | tonumber) | add ' )
-          BLOCKSUMWEI=$( printf "%.0f" "$BLOCKSUMWEI" )
-          BLOCKSUMNRG=$( printf ' %s / 1000000000000000000 ' "${BLOCKSUMWEI}" \
+          BLOCKSUMWEI=$( printf '%.0f' \
+            "$( printf '%s' "${TXLSTINT}" \
+              | jq -r '.result | map(.value | tonumber) | add ' )" )
+          BLOCKSUMNRG=$( printf ' %s / 1000000000000000000\n' "${BLOCKSUMWEI}" \
             | bc -l \
             | sed '/\./ s/\.\{0,1\}0\{1,\}$//' )
 
           # Masternode reward based on collateral
           MASTERNODE_REWARD=$( \
-            printf "%s * %s / 1000" "${MN_REWARD_FACTOR}" "${MNCOLLATERAL}" \
+            printf '%s * %s / 1000\n' "${MN_REWARD_FACTOR}" "${MNCOLLATERAL}" \
             | bc -l \
             | sed '/\./ s/\.\{0,1\}0\{1,\}$//' )
 
@@ -2055,29 +2128,39 @@ REPORT_INFO_ABOUT_NODE () {
           SQL_QUERY "INSERT INTO mn_rewards (mnAddress, rewardTime, blockNum, Reward, balance, nrgPrice)
             VALUES ('${ADDR}','${REWARDTIME}','${CHKBLOCK}','${BLOCKSUMNRG}', '${MNCOLLATERAL}', '${NRGMKTPRICE}');"
 
-          MNTOTALNRG=$( echo " ${MNTOTALNRG} + ${BLOCKSUMNRG} " | bc -l | sed '/\./ s/\.\{0,1\}0\{1,\}$//' )
+          MNTOTALNRG=$( printf ' %s + %s \n' "${MNTOTALNRG}" "${BLOCKSUMNRG}" \
+            | bc -l \
+            | sed '/\./ s/\.\{0,1\}0\{1,\}$//' )
 
           SQL_QUERY "REPLACE INTO mn_blocks (mnAddress, mnBlocksReceived, startMnBlk, endMnBlk, mnTotalReward)
             VALUES ('${ADDR}', 'N', '${STARTMNBLK}', '0', '${MNTOTALNRG}');"
-
-        elif  [[ ! -z $STARTMNBLK ]] && [[ -z ${ENDMNBLK} ]] && [[ $(echo $TXLSTINT | jq '.message' | awk '{print $2}' ) == internal ]]
+        elif  [[ -n $STARTMNBLK ]] \
+        && [[ -z ${ENDMNBLK} ]] \
+        && [[ $(echo "${TXLSTINT}" | jq '.message' | awk '{print $2}' ) == internal ]]
         then
           # All consecutive masternode payout blocks were found
           ENDMNBLK=$CHKBLOCK
-          if [[ ! -z $MNTOTALNRG ]]
+
+          if [[ -n $MNTOTALNRG ]]
           then
             SQL_QUERY "REPLACE INTO mn_blocks (mnAddress, mnBlocksReceived, startMnBlk, endMnBlk, mnTotalReward)
               VALUES ('${ADDR}','Y', '${STARTMNBLK}', '${ENDMNBLK}', '${MNTOTALNRG}');"
-
             log "${SHORTADDR}: *** Mn Reward received ***"
-
             market_price
             _MNREWARDS=$( SQL_REPORT "SELECT blockNum,Reward FROM mn_rewards WHERE blockNum BETWEEN ${STARTMNBLK} and ${ENDMNBLK};" )
-            _PAYLOAD="$( printf '%s\n%s\n%s\n%s\n%s' \
+            ACTIVECOLL=$( ${COMMAND} "masternode.stats().activeCollateral" 2>/dev/null )
+            SEC_TO_MNREWARD=$( printf "(%s) / 10000000000000000000000 * 60 \n" \
+              "$( printf '%.0f' "${ACTIVECOLL}" )" \
+              | bc -l \
+              | sed '/\./ s/\.\{0,1\}0\{1,\}$//')
+            TIME_TO_MNREWARD=$( DISPLAYTIME "${SEC_TO_MNREWARD}" )
+
+            _PAYLOAD="$( printf '%s\n%s\n%s\n%s\n%s\n%s' \
               "__Account: ${SHORTADDR}__" \
               "Market Price: ${CURRENCY} ${NRGMKTPRICE}" \
               "Masternode Collateral: ${MNCOLLATERAL} NRG" \
-              "Masternode reward: ${MNTOTALNRG} NRG" \
+              "Masternode Reward: ${MNTOTALNRG} NRG" \
+              "Next Reward ETA: ${TIME_TO_MNREWARD}" \
               "${_MNREWARDS}" )"
             # Post message
             PROCESS_NODE_MESSAGES "${mnShortAddress}" "mn_reward" "4" "${_PAYLOAD}" "" "${DISCORD_WEBHOOK_USERNAME}" "${DISCORD_WEBHOOK_AVATAR}"
@@ -2113,9 +2196,11 @@ REPORT_INFO_ABOUT_NODE () {
   # Check staking status.
   STAKING_TEXT='Disabled'
   GETSTAKINGSTATUS="false"
+
   if [[ $( echo "${GETBALANCE} >= 1" | bc -l ) -gt 0 ]]
   then
     GETSTAKINGSTATUS=$( ${COMMAND} "miner.stakingStatus().staking" 2>/dev/null )
+
     if [[ "${GETSTAKINGSTATUS}" == true ]]
     then
       STAKING=1
@@ -2123,7 +2208,7 @@ REPORT_INFO_ABOUT_NODE () {
     fi
   fi
 
-  if [[ ! -z "${GETBALANCE}" ]] && [[ "$( echo "${GETBALANCE} > 0.0" | bc -l )" -gt 0 ]]
+  if [[ -n "${GETBALANCE}" ]] && [[ "$( echo "${GETBALANCE} > 0.0" | bc -l )" -gt 0 ]]
   then
     if [[ "$( echo "${MIN_STAKE} > ${GETBALANCE}" | bc -l )" -gt 0 ]]
     then
@@ -2133,11 +2218,13 @@ ${ACCTBALANCE} < ${MIN_STAKE} " "" "${DISCORD_WEBHOOK_USERNAME}" "${DISCORD_WEBH
     else
       PROCESS_NODE_MESSAGES "${DATADIR}" "staking_balance" "5" "__${USRNAME} ${DAEMON_BIN}__
 Has enough coins to stake now!" "Balance is above the minimum" "${DISCORD_WEBHOOK_USERNAME}" "${DISCORD_WEBHOOK_AVATAR}"
+
       if [[ "${STAKING}" -eq 0 ]]
       then
         PROCESS_NODE_MESSAGES "${DATADIR}" "staking_status" "2" "__${USRNAME} ${DAEMON_BIN}__
 Staking status is DISABLED" "Staking is DISABLED" "" "" "" "${DISCORD_WEBHOOK_USERNAME}" "${DISCORD_WEBHOOK_AVATAR}"
       fi
+
       if [[ "${STAKING}" -eq 1 ]]
       then
         PROCESS_NODE_MESSAGES "${DATADIR}" "staking_status" "5" "__${USRNAME} ${DAEMON_BIN}__
@@ -2171,6 +2258,8 @@ Masternode is Active and Alive!" "Masternode Alive" "${DISCORD_WEBHOOK_USERNAME}
     PAST_UPTIME="${UPTIME}"
   fi
 
+  printf "uptime: %s\npast uptime: %s\n" "${UPTIME}" "${PAST_UPTIME}"
+
   if [[ "${UPTIME}" -lt "${PAST_UPTIME}" ]]
   then
     PAST_UPTIME_HUMAN=$( DISPLAYTIME "${PAST_UPTIME}" )
@@ -2196,6 +2285,10 @@ New uptime: ${UPTIME_HUMAN}" "" "${DISCORD_WEBHOOK_USERNAME}" "${DISCORD_WEBHOOK
   then
     PAST_UPTIME_MONITOR=${UPTIME_MONITOR}
   fi
+
+  printf "monitor uptime: %s\npast monitor uptime: %s\n" \
+    "${UPTIME_MONITOR}" \
+    "${PAST_UPTIME_MONITOR}"
 
   if [[ "${UPTIME_MONITOR}" -lt "${PAST_UPTIME_MONITOR}" ]]
   then
@@ -2294,12 +2387,14 @@ New Balance: ${GETTOTALBALANCE}" "" "${DISCORD_WEBHOOK_USERNAME}" "${DISCORD_WEB
     NODEINSYNC="Node is NOT in Sync"
   fi
 
-  if [[ ${NODEHASH} != ${NODEAPIHASH} ]] && [[ ! -z ${NODEHASH} ]] && [[ ! -z ${NODEAPIHASH} ]]
+  if [[ ${NODEHASH} != "${NODEAPIHASH}" ]] \
+  && [[ -n ${NODEHASH} ]] \
+  && [[ -n ${NODEAPIHASH} ]]
   then
-    FIRSTNODEHASH=$( echo ${NODEHASH:2:8} )
-    LASTNODEHASH=$( echo ${NODEHASH:${#NODEHASH} - 8} )
-    FIRSTNODEAPIHASH=$( echo ${NODEAPIHASH:2:8} )
-    LASTNODEAPIHASH=$( echo ${NODEAPIHASH:${#NODEAPIHASH} - 8} )
+    FIRSTNODEHASH=${NODEHASH:2:8}
+    LASTNODEHASH=${NODEHASH:${#NODEHASH} - 8}
+    FIRSTNODEAPIHASH=${NODEAPIHASH:2:8}
+    LASTNODEAPIHASH=${NODEAPIHASH:${#NODEAPIHASH} - 8}
 
     _PAYLOAD="__${USRNAME} ${DAEMON_BIN}__
 Chain Split detected.
@@ -2312,9 +2407,12 @@ Connections: ${GETCONNECTIONCOUNT}"
 
     PROCESS_NODE_MESSAGES "${DATADIR}" "chain_split" "2" "${_PAYLOAD}" ":warning: Warning Chain :link: Split :warning:" "${DISCORD_WEBHOOK_USERNAME}" "${DISCORD_WEBHOOK_AVATAR}"
 
-  elif [[ ${NODEHASH} == ${NODEAPIHASH} ]]
+  elif [[ ${NODEHASH} == "${NODEAPIHASH}" ]]
   then
-
+    FIRSTNODEHASH=${NODEHASH:2:8}
+    LASTNODEHASH=${NODEHASH:${#NODEHASH} - 8}
+    FIRSTNODEAPIHASH=${NODEAPIHASH:2:8}
+    LASTNODEAPIHASH=${NODEAPIHASH:${#NODEAPIHASH} - 8}
     _PAYLOAD="__${USRNAME} ${DAEMON_BIN}__
 Chain back to normal.
 ${NODEINSYNC}
@@ -2323,13 +2421,12 @@ Local Hash: ${FIRSTNODEHASH}...${LASTNODEHASH}
 NodeAPI Hash: ${FIRSTNODEAPIHASH}...${LASTNODEAPIHASH}
 Block Height: ${GETBLOCKCOUNT}
 Connections: ${GETCONNECTIONCOUNT}"
-
     PROCESS_NODE_MESSAGES "${DATADIR}" "chain_split" "5" "${_PAYLOAD}" "Chain :link: is normal" "${DISCORD_WEBHOOK_USERNAME}" "${DISCORD_WEBHOOK_AVATAR}"
-
   fi
 
   # Report on daemon info.
   MASTERNODE_TEXT='Disabled'
+
   if [[ ${MASTERNODE} -eq 1 ]]
   then
     MASTERNODE_TEXT='Inactive'
@@ -2412,21 +2509,36 @@ GET_INFO_ON_THIS_NODE () {
 
   if [[ -z ${DATADIR} ]]
   then
-    DATADIR=$( ps -ef | grep datadir | grep -v "grep datadir" | grep -v "color" )
-    DATADIR=$( echo $DATADIR | awk -F'datadir' '{print $2}' | awk -F' ' '{print $1}' )
+    DATADIR=$( ps -ef \
+      | grep datadir \
+      | grep -v "grep datadir" \
+      | grep -v "color" \
+      | awk -F'datadir' '{print $2}' \
+      | awk -F' ' '{print $1}' )
   fi
 
   if [[ -z "${GETBLOCKCOUNT}" ]] && [[ -z "${GETCONNECTIONCOUNT}" ]]
   then
-    REPORT_INFO_ABOUT_NODE "${USRNAME}" "${DAEMON_BIN}" "${DATADIR}" "-2" "This node is frozen. PID: ${DAEMON_PID}"
+    REPORT_INFO_ABOUT_NODE \
+      "${USRNAME}" \
+      "${DAEMON_BIN}" \
+      "${DATADIR}" \
+      "-2" \
+      "This node is frozen. PID: ${DAEMON_PID}"
+
     return
   fi
 
   # Get the version number.
-  VERSION=$( energi3 version  2>/dev/null | grep "^Version:" | sed 's/[^0-9.]*\([0-9.]*\).*/\1/' )
+  VERSION=$( ${ENERGI_EXEC} version  2>/dev/null \
+    | grep "^Version:" \
+    | sed 's/[^0-9.]*\([0-9.]*\).*/\1/' )
+
   if [[ -z "${VERSION}" ]]
   then
-    VERSION=$( ${COMMAND} "admin.nodeInfo.name" 2>/dev/null | awk -F\/ '{print $2}' | sed 's/[^0-9.]*\([0-9.]*\).*/\1/' )
+    VERSION=$( ${COMMAND} "admin.nodeInfo.name" 2>/dev/null \
+      | awk -F\/ '{print $2}' \
+      | sed 's/[^0-9.]*\([0-9.]*\).*/\1/' )
   fi
 
   if [[ -z ${LISTACCOUNTS} ]]
@@ -2435,14 +2547,16 @@ GET_INFO_ON_THIS_NODE () {
   fi
 
   ALL_STAKE_INPUTS_BALANCE_COUNT=''
-  if [[ $( echo "${GETBALANCE} > 0" | bc -l ) -gt 0 ]]
+  if [[ $( printf '%s > 0\n' "${GETBALANCE}" | bc -l ) -gt 0 ]]
   then
       NUMBER_OF_ACCOUNTS=$( echo "${LISTACCOUNTS}" | wc -w )
       ALL_STAKE_INPUTS_BALANCE_COUNT="${STAKE_INPUTS_BALANCE} ${NUMBER_OF_ACCOUNTS}"
   fi
 
   # Check networkhashps
-  GETNETHASHRATE=$( ${COMMAND} "miner.getHashrate()" 2>/dev/null | grep -Eo '[+-]?[0-9]+([.][0-9]+)?' 2>/dev/null )
+  GETNETHASHRATE=$( ${COMMAND} "miner.getHashrate()" 2>/dev/null \
+    | grep -Eo '[+-]?[0-9]+([.][0-9]+)?' 2>/dev/null )
+
   if [[ -z "${GETNETHASHRATE}" ]]
   then
     GETNETHASHRATE=0
@@ -2457,6 +2571,7 @@ GET_INFO_ON_THIS_NODE () {
     0 \
     "${GETBALANCE}" \
     "${GETTOTALBALANCE}" \
+    "${STAKING:-0}" \
     "${GETCONNECTIONCOUNT}" \
     "${GETBLOCKCOUNT}" \
     "${UPTIME}" \
@@ -2467,25 +2582,25 @@ GET_INFO_ON_THIS_NODE () {
     "${VERSION}"
 }
 
- GET_NODE_INFO () {
-   DAEMON_BIN_FILTER="${1}"
-
+GET_NODE_INFO () {
+  DAEMON_BIN_FILTER="${1}"
   FILENAME_WITH_FUNCTIONS=''
+
   if [[ -r /var/multi-masternode-data/.bashrc ]]
   then
     FILENAME_WITH_FUNCTIONS='/var/multi-masternode-data/.bashrc'
   elif [[ -r /root/.bashrc ]]
   then
     FILENAME_WITH_FUNCTIONS='/root/.bashrc'
-  elif [[ -r /home/nrgstaker/.bashrc ]]
+  elif [[ -r "${STAKER_HOME}/.bashrc" ]]
   then
-    FILENAME_WITH_FUNCTIONS='/home/nrgstaker/.bashrc'
+    FILENAME_WITH_FUNCTIONS="${STAKER_HOME}/.bashrc"
   elif [[ -r /home/ubuntu/.bashrc ]]
   then
     FILENAME_WITH_FUNCTIONS='/home/ubuntu/.bashrc'
   fi
 
-  USR_HOME_DIR=$( grep ${USRNAME} /etc/passwd | awk -F: '{print $6}' )
+  USR_HOME_DIR=$( grep "${USRNAME}" /etc/passwd | awk -F: '{print $6}' )
 
   if [[ "${USR_HOME_DIR}" == 'X' ]]
   then
@@ -2505,7 +2620,7 @@ GET_INFO_ON_THIS_NODE () {
   CONF_FOLDER=$( dirname "${CONF_LOCATIONS}" )
   # Get daemon bin name and pid from lock in toml folder.
   CONF_FOLDER=$( dirname "${CONF_LOCATION}" )
-  DAEMON_BIN=energi3
+  DAEMON_BIN="${ENERGI_EXEC}"
   CONTROLLER_BIN="${DAEMON_BIN}"
   DAEMON_PID=$( ps -ef \
     | grep nodemon_cron.sh \
@@ -2515,21 +2630,22 @@ GET_INFO_ON_THIS_NODE () {
     | awk '{print $2}' )
 
   # Get path to daemon bin.
-  if [[ ! -z "${DAEMON_PID}" ]]
+  if [[ -n "${DAEMON_PID}" ]]
   then
     DAEMON_BIN_LOC=$( which "${DAEMON_BIN}" )
     CONTROLLER_BIN_LOC="${DATADIR}"
     COMMAND_FOLDER=$( dirname "${DAEMON_BIN_LOC}" )
     CONTROLLER_BIN_FOLDER=$( find "${COMMAND_FOLDER}" -executable -type f 2>/dev/null | grep -Ei "${DAEMON_BIN}$" )
 
-    if [[ ! -z "${CONTROLLER_BIN_FOLDER}" ]]
+    if [[ -n "${CONTROLLER_BIN_FOLDER}" ]]
     then
       CONTROLLER_BIN_LOC="${CONTROLLER_BIN_FOLDER}"
     fi
   fi
-  CONF_LOCATION=${CONTROLLER_BIN_LOC}
 
+  CONF_LOCATION=${CONTROLLER_BIN_LOC}
   UPTIME=0
+
   if [[ -n "${DAEMON_PID}" ]]
   then
     uptime () {
@@ -2554,7 +2670,8 @@ GET_INFO_ON_THIS_NODE () {
   fi
 
   # Skip if filtered out
-  if [[ ! -z "${DAEMON_BIN_FILTER}" ]] && [[ "${DAEMON_BIN_FILTER}" != "${DAEMON_BIN}" ]]
+  if [[ -n "${DAEMON_BIN_FILTER}" ]] \
+  && [[ "${DAEMON_BIN_FILTER}" != "${DAEMON_BIN}" ]]
   then
     return
   fi
@@ -2584,7 +2701,7 @@ GET_INFO_ON_THIS_NODE () {
 NOT_CRON_WORKFLOW () {
   if [[ -z ${DAEMON_BIN} ]]
   then
-    DAEMON_BIN="energi3"
+    DAEMON_BIN="${ENERGI_EXEC}"
   fi
 
   printf '\nInteractive Section. Press enter to use defaults.\n'
@@ -2599,8 +2716,7 @@ NOT_CRON_WORKFLOW () {
   printf "Current alias for this server: "
   override_read "${SERVER_ALIAS}"
   SQL_QUERY "REPLACE INTO variables (key,value) VALUES ('server_alias','${REPLY}');"
-  echo
-  echo -ne "IP Address: "; ip_address
+  printf '\nIP Address: '; ip_address
   SHOW_IP=$( SQL_QUERY "SELECT value FROM variables WHERE key = 'show_ip';" )
 
   if value_to_bool "${ECNM_SHOW_IP}" \
@@ -2695,32 +2811,30 @@ NOT_CRON_WORKFLOW () {
     echo "Telegram setup complete!"
   fi
 
-  exit 0
+  return 1 2>/dev/null || exit 1
 }
 
-  # Main
-  if [[ "${RESET}" == 'y' ]]
-  then
-    RESET_NODEMON
-  fi
+# Main
+if [[ "${RESET}" == 'y' ]]
+then
+  RESET_NODEMON
+fi
 
-  if [[ "${arg1}" == 'node_run' ]]
-  then
-    GET_NODE_INFO "${arg2}" "${arg3}"
-  elif [[ "${arg1}" != 'cron' ]]
-  then
-    NOT_CRON_WORKFLOW
-  else
-    GET_LATEST_LOGINS
-    CHECK_DISK
-    CHECK_CPU_LOAD
-    CHECK_SWAP
-    CHECK_RAM
-    CHECK_OOM_KILLS
-    CHECK_CLOCK
-    CHECK_DEBSUMS
-    CHECK_RKHUNTER
-    GET_NODE_INFO
-  fi
-
- # End of the masternode monitor script.
+if [[ "${arg1}" == 'node_run' ]]
+then
+  GET_NODE_INFO "${arg2}" "${arg3}"
+elif [[ "${arg1}" != 'cron' ]]
+then
+  NOT_CRON_WORKFLOW
+else
+  GET_LATEST_LOGINS
+  CHECK_DISK
+  CHECK_CPU_LOAD
+  CHECK_SWAP
+  CHECK_RAM
+  CHECK_OOM_KILLS
+  CHECK_CLOCK
+  CHECK_DEBSUMS
+  CHECK_RKHUNTER
+  GET_NODE_INFO
+fi

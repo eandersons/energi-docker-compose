@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ip_address () {
+ip_address() {
   if [[ "${ECNM_SHOW_IP_EXTERNAL:-n}" == 'y' ]]
   then
     IP_ADDRESS="$( wget -qO- https://api.ipify.org )"
@@ -12,6 +12,14 @@ ip_address () {
 }
 
 market_price() {
+  timestamp="${1}"
+  endpoint="https://min-api.cryptocompare.com/data/price?fsym=NRG&tsyms=${CURRENCY}"
+
+  if [[ -n "${timestamp}" ]]
+  then
+    endpoint="${endpoint}&ts=${timestamp}"
+  fi
+
   # Get price once
   if [[ -z "${NRGMKTPRICE}" ]]
   then
@@ -19,7 +27,7 @@ market_price() {
       --connect-timeout 30 \
       --header "Accept: application/json" \
       --silent \
-      "https://min-api.cryptocompare.com/data/price?fsym=NRG&tsyms=${CURRENCY}" \
+      "${endpoint}" \
       | jq ".${CURRENCY}" )"
   fi
 }
@@ -28,7 +36,7 @@ message_date() {
   TZ="${MESSAGE_TIME_ZONE}" date -R
 }
 
-override_read () {
+override_read() {
   if [[ "${INTERACTIVE}" == 'n' ]]
   then
     printf '%s\n' "${1}"
