@@ -25,6 +25,8 @@ ARG STAKER_HOME
 ARG NODEMON_LOG_DIR=${STAKER_HOME}/log
 ARG SSH_DIR=${STAKER_HOME}/.ssh
 
+ENV STAKER_HOME=${STAKER_HOME:?}
+
 RUN apt-get update --quiet \
   && apt-get upgrade --assume-yes --quiet \
   && apt-get install --assume-yes --no-install-recommends --quiet \
