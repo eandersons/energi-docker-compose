@@ -4,4 +4,4 @@
 # The command `rm preimages.rlp` may throw an error (it does not affect the outcome) as `preimages.rlp` might not exist.
 rm preimages.rlp
 wget https://s3-us-west-2.amazonaws.com/download.energi.software/releases/chaindata/mainnet/preimages.rlp
-energi3 import-preimages preimages.rlp
+${ENERGI_BIN} import-preimages preimages.rlp

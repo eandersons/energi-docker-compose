@@ -27,7 +27,7 @@
 #   1.3.1  20211208  ZAlam Energi Core Node repo change
 #   1.3.5  20210101  ZAlam Exclude TTY executions & use correct ${ENERGI_EXEC} binary
 
-# Energi Core Node Monitor for `energi3-docker-compose`
+# Energi Core Node Monitor for `energi-docker-compose`
 #
 # This is a modified version of
 # https://github.com/energicryptocurrency/energi3-provisioning/blob/master/scripts/linux/nodemon.sh
@@ -93,7 +93,7 @@ then
   USRNAME=$( basename "${STAKER_HOME}" )
 fi
 
-ENERGI_EXEC=energi3
+ENERGI_EXEC="${ENERGI_BIN}"
 printf 'Using binary: %s\n' "${ENERGI_EXEC}"
 
 LOGDIR="${STAKER_HOME}/log"
@@ -128,7 +128,7 @@ then
   fi
 fi
 
-DATADIR="${STAKER_HOME}/.energicore3"
+DATADIR="${ENERGI_CORE_DIR}"
 
 if [[ ! -f ${DATADIR}/energi3/nodekey ]]
 then
@@ -2430,6 +2430,7 @@ Connections: ${GETCONNECTIONCOUNT}"
   if [[ ${MASTERNODE} -eq 1 ]]
   then
     MASTERNODE_TEXT='Inactive'
+
     if [[ ${MNINFO} -eq 1 ]]
     then
       MASTERNODE_TEXT='Offline'
@@ -2716,7 +2717,8 @@ NOT_CRON_WORKFLOW () {
   printf "Current alias for this server: "
   override_read "${SERVER_ALIAS}"
   SQL_QUERY "REPLACE INTO variables (key,value) VALUES ('server_alias','${REPLY}');"
-  printf '\nIP Address: '; ip_address
+  printf '\nIP Address: '
+  ip_address
   SHOW_IP=$( SQL_QUERY "SELECT value FROM variables WHERE key = 'show_ip';" )
 
   if value_to_bool "${ECNM_SHOW_IP}" \
