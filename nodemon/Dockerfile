@@ -15,9 +15,10 @@ RUN apt-get update \
 # https://hub.docker.com/_/ubuntu
 FROM ubuntu:latest
 
-ARG BIN_DIR=/usr/local/bin
 ARG DEBIAN_FRONTEND=noninteractive
 ARG ECNM_DATA_DIR=/var/multi-masternode-data/nodebot
+ARG ENERGI_BIN
+ARG ENERGI_CORE_DIR
 ARG LOG_DIR=/var/log
 ARG USER_AND_GROUP_ID=1000
 ARG USERNAME=nrgstaker
@@ -25,6 +26,8 @@ ARG STAKER_HOME
 ARG NODEMON_LOG_DIR=${STAKER_HOME}/log
 ARG SSH_DIR=${STAKER_HOME}/.ssh
 
+ENV ENERGI_BIN="${ENERGI_BIN:?}"
+ENV ENERGI_CORE_DIR="${ENERGI_CORE_DIR:?}"
 ENV STAKER_HOME=${STAKER_HOME:?}
 
 RUN apt-get update --quiet \
@@ -55,7 +58,7 @@ RUN apt-get update --quiet \
   usermod --append --groups sudo ${USERNAME}; \
   mkdir --parents ${ECNM_DATA_DIR} \
   && chown --recursive ${USERNAME} ${ECNM_DATA_DIR}; \
-  mkdir --parents ${STAKER_HOME}/.energicore3 \
+  mkdir --parents "${ENERGI_CORE_DIR}" \
   && mkdir --parents ${SSH_DIR}; \
   mkdir --parents ${NODEMON_LOG_DIR} \
   && touch ${NODEMON_LOG_DIR}/nodemon.log; \
@@ -63,11 +66,11 @@ RUN apt-get update --quiet \
   touch ${LOG_DIR}/auth.log \
   && touch ${LOG_DIR}/kern.log
 
-COPY --from=energi-builder [ "/go/energi/build/bin/energi3", "${BIN_DIR}" ]
+COPY --from=energi-builder [ "/go/energi/build/bin/energi3", "${ENERGI_BIN}" ]
 COPY --chown=${USERNAME}:${USERNAME} [ ".ssh", "${SSH_DIR}/" ]
 COPY [ "etc", "/etc" ]
 
-RUN chmod +x ${BIN_DIR}/energi3 && chmod -R 600 ${SSH_DIR}/id_rsa
+RUN chmod +x ${ENERGI_BIN} && chmod -R 600 ${SSH_DIR}/id_rsa
 
 WORKDIR ${STAKER_HOME}
 
