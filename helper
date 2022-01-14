@@ -200,6 +200,7 @@ start)
     ;;
   monitor)
     ${up} monitor
+
     exit ${?}
     ;;
   *)
@@ -228,7 +229,7 @@ update)
       "${pattern_value}" \
       "${target}" )"
 
-    if [ "${new_value}" != "${current_value}" ]
+    if [ "${new_value}" != "${current_value}" ] && [ -f "${target}" ]
     then
       printf "Current value \`%s\` differs from the provided one: \`%s\`.\n" \
         "${current_value}" \
@@ -265,6 +266,11 @@ update)
 
   for last_argument in "${@}"; do :; done
 
+  if [ "${last_argument}" = 'update' ]
+  then
+    last_argument=''
+  fi
+
   pattern_version_value='v[0-9]\+\.[0-9]\+\.[0-9]\+'
   env_version="$( value_from_file \
     '^ENERGI_VERSION=' \
@@ -272,7 +278,7 @@ update)
     "${env}" )"
 
   case "${last_argument}" in
-  '' | all | core | monitor | update) version="${env_version}" ;;
+  '' | all | core | monitor) version="${env_version}" ;;
   *)
     version=$( printf '%s' \
       "${last_argument}" | grep "${pattern_version_value}" )
@@ -291,16 +297,21 @@ update)
     ;;
   esac
 
-  pattern_monitor_image_prefix='^[[:space:]]*image: '
-  pattern_monitor_tag_value='.*'
-  update_value_in_file \
-    "${pattern_monitor_image_prefix}" \
-    "${pattern_monitor_tag_value}" \
-    "$( value_from_file \
+  case "${last_argument}" in
+  '' | all | monitor)
+    pattern_monitor_image_prefix='^[[:space:]]*image: '
+    pattern_monitor_tag_value='.*'
+    update_value_in_file \
       "${pattern_monitor_image_prefix}" \
       "${pattern_monitor_tag_value}" \
-      'docker-compose.override.template.yml' )" \
-    'docker-compose.override.yml'
+      "$( value_from_file \
+        "${pattern_monitor_image_prefix}" \
+        "${pattern_monitor_tag_value}" \
+        'docker-compose.override.template.yml' )" \
+      'docker-compose.override.yml'
+    ;;
+  esac
+
   ${command}
 
   exit ${?}
