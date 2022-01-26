@@ -30,6 +30,8 @@ RUN addgroup --gid ${USER_AND_GROUP_ID} ${USERNAME} \
   chown -R ${USERNAME}:${USERNAME} ${STAKER_HOME}
 
 COPY --chown=${USERNAME}:${USERNAME} [ ".sshd", "${SSHD_DIR}/" ]
+RUN chmod 755 ${SSHD_DIR} && chmod 600 "${SSHD_DIR}/authorized_keys"
+
 COPY --chown=${USERNAME}:${USERNAME} [ "scripts", "./" ]
 
 USER ${USERNAME}
