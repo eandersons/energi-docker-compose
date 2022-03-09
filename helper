@@ -49,6 +49,8 @@ service_arguments_message="Valid arguments are:
   - \`core\`;
   - \`monitor\`."
 exec='docker-compose exec'
+exec_core="${exec} core"
+exec_monitor="${exec} monitor"
 run='docker-compose run --rm'
 stop='docker-compose stop'
 up='docker-compose up --detach'
@@ -104,7 +106,7 @@ apply-preimages | preimages)
 attach)
   check_max_arguments_count ${#} 1 "${command_pattern_attach}"
   . ./.env
-  ${exec} core "${ENERGI_BIN} --datadir ${ENERGI_CORE_DIR} attach"
+  ${exec_core} "${ENERGI_BIN} --datadir ${ENERGI_CORE_DIR} attach"
 
   exit ${?}
   ;;
@@ -128,12 +130,12 @@ console | shell | terminal)
 
   case "${2}" in
   core)
-    ${exec} core /bin/sh
+    ${exec_core} /bin/sh
 
     exit ${?}
     ;;
   monitor)
-    ${exec} monitor /bin/bash
+    ${exec_monitor} /bin/bash
 
     exit ${?}
     ;;
@@ -214,7 +216,7 @@ start)
   ;;
 staking-status | status)
   check_max_arguments_count ${#} 1 "${command_pattern_status}"
-  ${exec} core sh energi-core-node-status.sh
+  ${exec_core} sh energi-core-node-status.sh
 
   exit ${?}
   ;;
