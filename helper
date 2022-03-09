@@ -4,6 +4,8 @@ command_pattern_attach='attach'
 command_pattern_chaindata='bootstrap-chaindata | chaindata'
 service_choices='core | monitor'
 command_pattern_console="console | shell | terminal ${service_choices}"
+command_pattern_masternode="\
+masternode-enode-url | masternode-enode | mn-enode-url | mn-enode"
 command_pattern_preimages='apply-preimages | preimages'
 service_pattern="all | ${service_choices}"
 command_pattern_update="update [${service_pattern}] [<version>]"
@@ -27,6 +29,8 @@ Available commands:
         Attach to Energi Core Node or Monitor container
     help
         ${help_description}
+    ${command_pattern_masternode}
+        Get Masternode enode URL to be used to announce Masternode
     ${command_pattern_setup}
         Setup Energi Core Node container(s)
     ${command_pattern_start}
@@ -146,6 +150,12 @@ console | shell | terminal)
     exit 1
     ;;
   esac
+  ;;
+masternode-enode-url | masternode-enode | mn-enode-url | mn-enode)
+  check_max_arguments_count ${#} 1 "${command_pattern_masternode}"
+  ${exec_core} sh energi-masternode-enode-url.sh
+
+  exit ${?}
   ;;
 setup)
   setup_monitor() {
