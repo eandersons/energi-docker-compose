@@ -106,7 +106,7 @@ apply-preimages | preimages)
 attach)
   check_max_arguments_count ${#} 1 "${command_pattern_attach}"
   . ./.env
-  ${exec_core} "${ENERGI_BIN} --datadir ${ENERGI_CORE_DIR} attach"
+  ${exec_core} "${ENERGI_BIN}" --datadir "${ENERGI_CORE_DIR}" attach
 
   exit ${?}
   ;;
