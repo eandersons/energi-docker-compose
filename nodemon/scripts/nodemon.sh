@@ -1797,7 +1797,7 @@ REPORT_INFO_ABOUT_NODE () {
   # Get list of accounts from core node
   if [[ -z ${LISTACCOUNTS} ]]
   then
-      LISTACCOUNTS=$( $COMMAND} "personal.listAccounts" 2>/dev/null | jq -r '.[]' )
+    LISTACCOUNTS=$(${COMMAND} "personal.listAccounts" 2>/dev/null | jq -r '.[]')
   fi
 
   # save miner in array
@@ -1833,31 +1833,29 @@ REPORT_INFO_ABOUT_NODE () {
   NETWORKDIFF=0
 
   # Loop through all the addresses
-  for ADDR in ${LISTACCOUNTS}
-  do
-
+  for ADDR in ${LISTACCOUNTS}; do
     # Reset parameter
     STARTMNBLK=''
     ENDMNBLK=''
     REWARDTIME=''
-
     # Change address to lower case
-    ADDR=$( echo ${ADDR} | tr '[:upper:]' '[:lower:]' )
-    SHORTADDR=$( echo ${ADDR:2:6} )
-
+    ADDR=$(printf '%s' "${ADDR}" | tr '[:upper:]' '[:lower:]' )
+    SHORTADDR="${ADDR:2:6}"
     # Start from last checked block for ADDR
     CHKBLOCK=${LASTCHKBLOCK}
-
     # Get total staking account balance
-    ACCTBALANCE=$( $COMMAND "web3.fromWei(nrg.getBalance('$ADDR'), 'energi')" 2>/dev/null )
-    GETBALANCE=$( echo "$GETBALANCE + $ACCTBALANCE" | bc -l )
+    ACCTBALANCE=$($COMMAND "web3.fromWei(nrg.getBalance('$ADDR'), 'energi')" \
+      2>/dev/null)
+    GETBALANCE=$(printf '%s\n' "$GETBALANCE + $ACCTBALANCE" | bc -l)
 
     # Check if ADDR is a masternode
-    if [[ ${MASTERNODE} -ne 1 ]]
-    then
-      MNCOLLATERAL=$( $COMMAND "web3.fromWei(masternode.masternodeInfo('$ADDR').collateral, 'energi')" 2>/dev/null | jq -r '.' )
-      if [[ ${MNCOLLATERAL} -eq 0 ]]
-      then
+    if [[ ${MASTERNODE} -ne 1 ]]; then
+      MNCOLLATERAL=$($COMMAND \
+        "web3.fromWei(masternode.masternodeInfo('$ADDR').collateral, 'energi')" \
+        2>/dev/null |
+        jq -r '.')
+
+      if [[ ${MNCOLLATERAL} -eq 0 ]]; then
         # Zero collatoral indicates not a masternode (Disabled)
         MASTERNODE=0
         MNINFO=0
@@ -1871,17 +1869,18 @@ REPORT_INFO_ABOUT_NODE () {
         MNINFO=0
         # Set for reporting
         mnShortAddress=${SHORTADDR}
+        isActiveMn=$(${COMMAND} "masternode.masternodeInfo('$ADDR').isActive" \
+          2>/dev/null |
+          jq '.')
 
-        isActiveMn=$( ${COMMAND} "masternode.masternodeInfo('$ADDR').isActive" 2>/dev/null | jq '.' )
-
-        if [[ "${isActiveMn}" == true ]]
-        then
+        if [[ "${isActiveMn}" == true ]]; then
           # Not Alive (Offline)
           MNINFO=1
-          isAliveMn=$( ${COMMAND} "masternode.masternodeInfo('$ADDR').isAlive" 2>/dev/null | jq '.' )
+          isAliveMn=$(${COMMAND} "masternode.masternodeInfo('$ADDR').isAlive" \
+            2>/dev/null |
+            jq '.' )
 
-          if [[ "${isAliveMn}" == true ]]
-          then
+          if [[ "${isAliveMn}" == true ]]; then
             # Masternode Alive and Active (Alive)
             MNINFO=2
           fi
@@ -1890,26 +1889,30 @@ REPORT_INFO_ABOUT_NODE () {
     fi
 
     # For every ADDR check every blocks
-    while [[ $( echo "$CHKBLOCK < $CURRENTBLKNUM" | bc -l ) -eq 1  ]]
-    do
+    while [[ $(printf '%s\n' "$CHKBLOCK < $CURRENTBLKNUM" | bc -l) -eq 1  ]]; do
       BLOCKMINER=${MINER[${CHKBLOCK}]}
 
       # Update database if stake received
-      if [[ ${ADDR} == "${BLOCKMINER}" ]]
-      then
+      if [[ ${ADDR} == "${BLOCKMINER}" ]]; then
         STAKERWD=Y
-        REWARDTIME=$( ${COMMAND} "nrg.getBlock($CHKBLOCK).timestamp" 2>/dev/null )
+        REWARDTIME=$(${COMMAND} "nrg.getBlock($CHKBLOCK).timestamp" 2>/dev/null)
         market_price "${REWARDTIME}"
         # No way to determine at the time. Assume default
         REWARDAMT=2.28
-        SQL_QUERY "INSERT INTO stake_rewards (stakeAddress, rewardTime, blockNum, Reward, balance, nrgPrice)
-          VALUES ('${ADDR}','${REWARDTIME}','${CHKBLOCK}','${REWARDAMT}', '${ACCTBALANCE}', '${NRGMKTPRICE}');"
+        SQL_QUERY "INSERT INTO stake_rewards (
+          stakeAddress, rewardTime, blockNum, Reward, balance, nrgPrice
+        ) VALUES (
+          '${ADDR}',
+          '${REWARDTIME}',
+          '${CHKBLOCK}',
+          '${REWARDAMT}',
+          '${ACCTBALANCE}',
+          '${NRGMKTPRICE}'
+        );"
         log "${SHORTADDR}: *** Stake received ***"
 
-        if [[ ${NETWORKDIFF} -eq 0 ]]
-        then
-          NETWORKDIFF=$( SQL_QUERY "SELECT AVG(difficulty) FROM net_difficulty;" )
-
+        if [[ ${NETWORKDIFF} -eq 0 ]]; then
+          NETWORKDIFF=$(SQL_QUERY "SELECT AVG(difficulty) FROM net_difficulty;")
         fi
 
         # Coeeficient factor
@@ -1919,21 +1922,28 @@ REPORT_INFO_ABOUT_NODE () {
         BLOCKTIME_SECONDS=60
         COOLDOWNTIME=3600
         # Get average staking times for masternode and staking rewards.
-        COINS_STAKED_TOTAL_NETWORK=$( echo "${k} * ${NETWORKDIFF}" | bc -l )
-        SEC_TO_AVG_STAKE_PER_BAL=$( echo "${COINS_STAKED_TOTAL_NETWORK} / ${ACCTBALANCE} * ${BLOCKTIME_SECONDS} * ${COEFF}" | bc -l | sed '/\./ s/\.\{0,1\}0\{1,\}$//' )
+        COINS_STAKED_TOTAL_NETWORK=$(printf '%s\n' "${k} * ${NETWORKDIFF}" |
+          bc -l)
+        SEC_TO_AVG_STAKE_PER_BAL=$(printf '%s / %s * %s * %s\n' \
+          "${COINS_STAKED_TOTAL_NETWORK}" \
+          "${ACCTBALANCE}" \
+          "${BLOCKTIME_SECONDS}" \
+          "${COEFF}" | bc -l | sed '/\./ s/\.\{0,1\}0\{1,\}$//')
 
         # Max of COOLDOWNTIME and SEC_TO_AVG_STAKE_PER_BAL
-        if [[ $( echo "${COOLDOWNTIME} > ${SEC_TO_AVG_STAKE_PER_BAL}" | bc -l ) -gt 0 ]]
-        then
+        if [[ \
+          $(printf '%s\n' "${COOLDOWNTIME} > ${SEC_TO_AVG_STAKE_PER_BAL}" |
+            bc -l ) -gt 0 \
+        ]]; then
           SEC_TO_AVG_STAKE=${COOLDOWNTIME}
         else
           SEC_TO_AVG_STAKE=${SEC_TO_AVG_STAKE_PER_BAL}
         fi
+
         TIME_TO_STAKE=$( DISPLAYTIME "${SEC_TO_AVG_STAKE}" )
 
         # Debug Output
-        if [[ "${DEBUG_OUTPUT}" -eq 1 ]]
-        then
+        if [[ "${DEBUG_OUTPUT}" -eq 1 ]]; then
           printf '%s\n%s\n%s\n' \
             "Staking Balance: ${ACCTBALANCE}" \
             "Avg Difficulty: ${NETWORKDIFF}" \
@@ -1945,117 +1955,139 @@ REPORT_INFO_ABOUT_NODE () {
         _PAYLOAD="$( printf '%s\n%s\n%s\n%s\n%s\n%s' \
           "__Account: ${SHORTADDR}__" \
           "Market Price: ${CURRENCY} ${NRGMKTPRICE}" \
-          "New Balance: ${ACCTBALANCE} NRG" \
           "Stake Reward: ${REWARDAMT} NRG" \
+          "New Balance: ${ACCTBALANCE} NRG" \
           "Block Number: ${CHKBLOCK}" \
           "Next Stake ETA: ${TIME_TO_STAKE}" )"
         # Post message
-        PROCESS_NODE_MESSAGES "${SHORTADDR}" "stake_reward" "4" "${_PAYLOAD}" "" "${DISCORD_WEBHOOK_USERNAME}" "${DISCORD_WEBHOOK_AVATAR}"
+        PROCESS_NODE_MESSAGES \
+          "${SHORTADDR}" \
+          "stake_reward" \
+          "4" \
+          "${_PAYLOAD}" \
+          "" \
+          "${DISCORD_WEBHOOK_USERNAME}" \
+          "${DISCORD_WEBHOOK_AVATAR}"
 
         # Send EMAIL / SMS if set in nodemon.conf
-        if [[ "${SENDEMAIL}" = "Y" ]]
-        then
+        if [[ "${SENDEMAIL}" = "Y" ]]; then
           SEND_EMAIL "Stake received"
         fi
 
-        if [[ "${SENDSMS}" = "Y" ]]
-        then
+        if [[ "${SENDSMS}" = "Y" ]]; then
           SEND_SMS "Stake received"
         fi
       fi
 
       # If Address is a masternode
-      if [[ "${isAliveMn}" == true ]] && [[ -z ${ENDMNBLK} ]]
-      then
+      if [[ "${isAliveMn}" == true ]] && [[ -z ${ENDMNBLK} ]]; then
+        MNCHKDONE=$(SQL_QUERY \
+          "SELECT mnBlocksReceived FROM mn_blocks WHERE mnAddress = '${ADDR}';")
 
-        MNCHKDONE=$( SQL_QUERY "SELECT mnBlocksReceived FROM mn_blocks WHERE mnAddress = '${ADDR}';" )
-        if [[ ${MNCHKDONE} == N ]]
-        then
-          MNTOTALNRG=$( SQL_QUERY "SELECT mnTotalReward FROM mn_blocks WHERE mnAddress = '${ADDR}';" )
-          STARTMNBLK=$( SQL_QUERY "SELECT startMnBlk FROM mn_blocks WHERE mnAddress = '${ADDR}';" )
+        if [[ ${MNCHKDONE} == N ]]; then
+          MNTOTALNRG=$(SQL_QUERY \
+            "SELECT mnTotalReward FROM mn_blocks WHERE mnAddress = '${ADDR}';")
+          STARTMNBLK=$(SQL_QUERY \
+            "SELECT startMnBlk FROM mn_blocks WHERE mnAddress = '${ADDR}';")
           ENDMNBLK=''
         fi
 
         # Call txlistinternal API to get internal transactions
-        TXLSTINT=$( curl -H "accept: application/json" -s "${NRGAPI}?module=account&action=txlistinternal&address=${ADDR}&startblock=${CHKBLOCK}&endblock=${CHKBLOCK}" )
-        if [[ $(echo $TXLSTINT | jq -r '.message') == OK ]]
-        then
-
-          if [[ -z $STARTMNBLK ]]
-          then
+        TXLSTINT=$(curl \
+          -H "accept: application/json" \
+          -s "${NRGAPI}?module=account&action=txlistinternal&address=${ADDR}&startblock=${CHKBLOCK}&endblock=${CHKBLOCK}")
+        if [[ $(echo "$TXLSTINT" | jq -r '.message') == OK ]]; then
+          if [[ -z $STARTMNBLK ]]; then
             STARTMNBLK=$CHKBLOCK
             MNRWD=Y
           fi
 
           market_price
           # Add rewards for block
-          BLOCKSUMWEI=$( printf '%.0f' \
-            "$( printf '%s' "${TXLSTINT}" \
-              | jq -r '.result | map(.value | tonumber) | add ' )" )
-          BLOCKSUMNRG=$( printf ' %s / 1000000000000000000\n' "${BLOCKSUMWEI}" \
+          BLOCKSUMWEI=$(printf '%.0f' \
+            "$(printf '%s' "${TXLSTINT}" \
+              | jq -r '.result | map(.value | tonumber) | add ')")
+          BLOCKSUMNRG=$(printf ' %s / 1000000000000000000\n' "${BLOCKSUMWEI}" \
             | bc -l \
-            | sed '/\./ s/\.\{0,1\}0\{1,\}$//' )
-
+            | sed '/\./ s/\.\{0,1\}0\{1,\}$//')
           # Masternode reward based on collateral
           MASTERNODE_REWARD=$( \
             printf '%s * %s / 1000\n' "${MN_REWARD_FACTOR}" "${MNCOLLATERAL}" \
             | bc -l \
-            | sed '/\./ s/\.\{0,1\}0\{1,\}$//' )
+            | sed '/\./ s/\.\{0,1\}0\{1,\}$//')
 
           # Time of block generation
-          if [[ -z ${REWARDTIME} ]]
-          then
-            REWARDTIME=$( ${COMMAND} "nrg.getBlock($CHKBLOCK).timestamp" 2>/dev/null )
+          if [[ -z ${REWARDTIME} ]]; then
+            REWARDTIME=$(${COMMAND} \
+              "nrg.getBlock($CHKBLOCK).timestamp" 2>/dev/null)
           fi
 
           # Update database
-          SQL_QUERY "INSERT INTO mn_rewards (mnAddress, rewardTime, blockNum, Reward, balance, nrgPrice)
-            VALUES ('${ADDR}','${REWARDTIME}','${CHKBLOCK}','${BLOCKSUMNRG}', '${MNCOLLATERAL}', '${NRGMKTPRICE}');"
-
-          MNTOTALNRG=$( printf ' %s + %s \n' "${MNTOTALNRG}" "${BLOCKSUMNRG}" \
+          SQL_QUERY "INSERT INTO mn_rewards (
+            mnAddress, rewardTime, blockNum, Reward, balance, nrgPrice
+          ) VALUES (
+            '${ADDR}',
+            '${REWARDTIME}',
+            '${CHKBLOCK}',
+            '${BLOCKSUMNRG}',
+            '${MNCOLLATERAL}',
+            '${NRGMKTPRICE}'
+            );"
+          MNTOTALNRG=$(printf ' %s + %s \n' "${MNTOTALNRG}" "${BLOCKSUMNRG}" \
             | bc -l \
-            | sed '/\./ s/\.\{0,1\}0\{1,\}$//' )
-
-          SQL_QUERY "REPLACE INTO mn_blocks (mnAddress, mnBlocksReceived, startMnBlk, endMnBlk, mnTotalReward)
-            VALUES ('${ADDR}', 'N', '${STARTMNBLK}', '0', '${MNTOTALNRG}');"
-        elif  [[ -n $STARTMNBLK ]] \
-        && [[ -z ${ENDMNBLK} ]] \
-        && [[ $(echo "${TXLSTINT}" | jq '.message' | awk '{print $2}' ) == internal ]]
+            | sed '/\./ s/\.\{0,1\}0\{1,\}$//')
+          SQL_QUERY "REPLACE INTO mn_blocks (
+            mnAddress, mnBlocksReceived, startMnBlk, endMnBlk, mnTotalReward
+          ) VALUES ('${ADDR}', 'N', '${STARTMNBLK}', '0', '${MNTOTALNRG}');"
+        elif
+          [[ -n $STARTMNBLK ]] &&
+          [[ -z ${ENDMNBLK} ]] &&
+          [[ $(printf '%s' "${TXLSTINT}" |
+            jq '.message' |
+            awk '{print $2}') == internal ]]
         then
           # All consecutive masternode payout blocks were found
           ENDMNBLK=$CHKBLOCK
 
-          if [[ -n $MNTOTALNRG ]]
-          then
-            SQL_QUERY "REPLACE INTO mn_blocks (mnAddress, mnBlocksReceived, startMnBlk, endMnBlk, mnTotalReward)
-              VALUES ('${ADDR}','Y', '${STARTMNBLK}', '${ENDMNBLK}', '${MNTOTALNRG}');"
+          if [[ -n $MNTOTALNRG ]]; then
+            SQL_QUERY "REPLACE INTO mn_blocks (
+                mnAddress, mnBlocksReceived, startMnBlk, endMnBlk, mnTotalReward
+              ) VALUES (
+                '${ADDR}','Y', '${STARTMNBLK}', '${ENDMNBLK}', '${MNTOTALNRG}'
+              );"
             log "${SHORTADDR}: *** Mn Reward received ***"
             market_price
-            _MNREWARDS=$( SQL_REPORT "SELECT blockNum,Reward FROM mn_rewards WHERE blockNum BETWEEN ${STARTMNBLK} and ${ENDMNBLK};" )
-            ACTIVECOLL=$( ${COMMAND} "masternode.stats().activeCollateral" 2>/dev/null )
-            SEC_TO_MNREWARD=$( printf "(%s) / 10000000000000000000000 * 60 \n" \
-              "$( printf '%.0f' "${ACTIVECOLL}" )" \
-              | bc -l \
-              | sed '/\./ s/\.\{0,1\}0\{1,\}$//')
-            TIME_TO_MNREWARD=$( DISPLAYTIME "${SEC_TO_MNREWARD}" )
-
-            _PAYLOAD="$( printf '%s\n%s\n%s\n%s\n%s\n%s' \
+            _MNREWARDS=$(SQL_REPORT \
+              "SELECT blockNum,Reward FROM mn_rewards
+              WHERE blockNum BETWEEN ${STARTMNBLK} and ${ENDMNBLK};")
+            SEC_TO_MNREWARD=$(printf '(%s) / 10000000000000000000000 * 60 \n' \
+              "$(printf '%.0f' "$(\
+                ${COMMAND} "masternode.stats().activeCollateral" 2>/dev/null \
+              )")" | bc -l | sed '/\./ s/\.\{0,1\}0\{1,\}$//')
+            _PAYLOAD="$(printf '%s\n%s\n%s\n%s\n%s\n%s\n\n%s' \
               "__Account: ${SHORTADDR}__" \
               "Market Price: ${CURRENCY} ${NRGMKTPRICE}" \
-              "Masternode Collateral: ${MNCOLLATERAL} NRG" \
               "Masternode Reward: ${MNTOTALNRG} NRG" \
-              "Next Reward ETA: ${TIME_TO_MNREWARD}" \
-              "${_MNREWARDS}" )"
+              "$(printf 'New Balance: %s' \
+                "$(total_node_balance "${GETBALANCE}" "${MNCOLLATERAL}")")" \
+              "Masternode Collateral: ${MNCOLLATERAL} NRG" \
+              "$(printf 'Next Reward ETA: %s' \
+                "$(DISPLAYTIME "${SEC_TO_MNREWARD}")")" \
+              "${_MNREWARDS}")"
             # Post message
-            PROCESS_NODE_MESSAGES "${mnShortAddress}" "mn_reward" "4" "${_PAYLOAD}" "" "${DISCORD_WEBHOOK_USERNAME}" "${DISCORD_WEBHOOK_AVATAR}"
+            PROCESS_NODE_MESSAGES \
+              "${mnShortAddress}" \
+              "mn_reward" "4" \
+              "${_PAYLOAD}" \
+              "" \
+              "${DISCORD_WEBHOOK_USERNAME}" \
+              "${DISCORD_WEBHOOK_AVATAR}"
 
             # Send EMAIL / SMS if set in ngrmon.conf
-            if [[ "${SENDEMAIL}" = "Y" ]]
-            then
+            if [[ "${SENDEMAIL}" = "Y" ]]; then
               SEND_EMAIL "Mn Rwd received"
             fi
-            if [[ "${SENDSMS}" = "Y" ]]
-            then
+            if [[ "${SENDSMS}" = "Y" ]]; then
               SEND_SMS "Mn Rwd received"
             fi
           fi
@@ -2064,38 +2096,35 @@ REPORT_INFO_ABOUT_NODE () {
       ((CHKBLOCK++))
     done
 
-    if [[ ! ${STAKERWD} == Y ]] || [[ ! ${MNRWD} == Y  ]]
-    then
+    if [[ ! ${STAKERWD} == Y ]] || [[ ! ${MNRWD} == Y  ]]; then
        log "${SHORTADDR}: No stake reward"
     fi
-
   done
 
   # Update last_block_checked for next iteration
-  SQL_QUERY "REPLACE INTO variables (key,value) VALUES ('last_block_checked','${CURRENTBLKNUM}');"
-
+  SQL_QUERY "REPLACE INTO variables (key, value)
+    VALUES ('last_block_checked', '${CURRENTBLKNUM}');"
   # Get total on node
-  GETTOTALBALANCE=$( echo "$GETBALANCE + $MNCOLLATERAL" | bc -l | sed '/\./ s/\.\{0,1\}0\{1,\}$//' )
+  GETTOTALBALANCE=$(total_node_balance "${GETBALANCE}" "${MNCOLLATERAL}")
 
   # Check staking status.
   STAKING_TEXT='Disabled'
   GETSTAKINGSTATUS="false"
 
-  if [[ $( echo "${GETBALANCE} >= 1" | bc -l ) -gt 0 ]]
-  then
-    GETSTAKINGSTATUS=$( ${COMMAND} "miner.stakingStatus().staking" 2>/dev/null )
+  if [[ $(printf '%s\n' "${GETBALANCE} >= 1" | bc -l) -gt 0 ]]; then
+    GETSTAKINGSTATUS=$(${COMMAND} "miner.stakingStatus().staking" 2>/dev/null)
 
-    if [[ "${GETSTAKINGSTATUS}" == true ]]
-    then
+    if [[ "${GETSTAKINGSTATUS}" == true ]]; then
       STAKING=1
       STAKING_TEXT='Enabled'
     fi
   fi
 
-  if [[ -n "${GETBALANCE}" ]] && [[ "$( echo "${GETBALANCE} > 0.0" | bc -l )" -gt 0 ]]
+  if
+    [[ -n "${GETBALANCE}" ]] &&
+    [[ "$(printf '%s\n' "${GETBALANCE} > 0.0" | bc -l)" -gt 0 ]]
   then
-    if [[ "$( echo "${MIN_STAKE} > ${GETBALANCE}" | bc -l )" -gt 0 ]]
-    then
+    if [[ "$( echo "${MIN_STAKE} > ${GETBALANCE}" | bc -l )" -gt 0 ]]; then
       PROCESS_NODE_MESSAGES "${DATADIR}" "staking_balance" "2" "__${USRNAME} ${DAEMON_BIN}__
 Balance (${GETBALANCE}) is below the minimum staking threshold (${MIN_STAKE}).
 ${ACCTBALANCE} < ${MIN_STAKE} " "" "${DISCORD_WEBHOOK_USERNAME}" "${DISCORD_WEBHOOK_AVATAR}"

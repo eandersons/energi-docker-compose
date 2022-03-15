@@ -46,6 +46,14 @@ override_read() {
   fi
 }
 
+total_node_balance() {
+  masternode_collateral=${1}
+  staking_balance=${2}
+  printf '%s' "$(printf '%s\n' "${masternode_collateral} + ${staking_balance}" |
+    bc -l |
+    sed '/\./ s/\.\{0,1\}0\{1,\}$//')"
+}
+
 value_to_bool() {
   value="${1,,}"
 
