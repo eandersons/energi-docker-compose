@@ -13,13 +13,11 @@ Theoretically this repository should also work on Windows by using WSL and maybe
 Git Bash or any other Linux shell emulator that supports commands used in the
 helper shell script `helper`.
 
-This repository was created with staking in mind. More adjustments may be
-necessary to run containerised Energi Core Node as a Masternode.
-
 ---
 
 - [Prerequisites](#prerequisites)
 - [Run Energi Core Node](#run-energi-core-node)
+- [Masternode](#masternode)
 - [Troubleshooting](#troubleshooting)
   - [Apply preimages](#apply-preimages)
   - [Bootstrap chaindata](#bootstrap-chaindata)
@@ -100,6 +98,20 @@ synchronised, value under `nrg.syncing:` is `false` and value for `miner` and
 `staking` in the output under `miner.stakingStatus():` is `true`. If not, a
 block synchronisation might be in progress and `./helper status` should be
 executed after a while again to check if Energi Core Node is syncrhonised.
+
+## Masternode
+
+`energi-docker-compose` is masternode ready. Masternode can be enabled by
+following the official
+[Masternode Guide](https://wiki.energi.world/en/masternode-guide).
+
+A helper command is available to get masternode enode URL:
+`./helper masternode-enode-url` (shorter aliases are available as well:
+`masternode-enode`, `mn-enode-url`, `mn-enode`). It covers steps 3.1 and 3.2
+from the section
+[Announcing the Masternode](https://wiki.energi.world/en/masternode-guide#h-3-announcing-the-masternode).\
+Alternatively step 3.1 can be executed with `./helper attach`, then 3.2 as
+described in the guide.
 
 ## Troubleshooting
 
