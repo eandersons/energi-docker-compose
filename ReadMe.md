@@ -159,6 +159,19 @@ be used: `./helper bootstrap-chaindata`.
 It is possible to enable Energi Core Node Monitor. Instructions on how to set it
 up are located in [`nodemon/ReadMe.md`](nodemon/ReadMe.md).
 
+Energi Core Node Monitor container provides some additional features that can be
+enabled optionally:
+
+- configurable interval between Monitor runs (`ECNM_INTERVAL`);
+- configurable timezone for time display in messages (`MESSAGE_TIME_ZONE`);
+- display the current Enrgi market price in the configured currency in
+  information messages (`MARKET_PRICE_IN_INFORMATION`);
+- display reward amount, balance and its changes also in the configured
+  currency (`NRG_AMOUNT_IN_CURRENCY`).
+
+Configuration environment variables are described in
+[the section "Environment variables explained" in `nodemon/ReadMe.md`](nodemon/ReadMe.md#environment-variables-explained)
+
 ## Update
 
 To get changes from the repository and update Energi Core Node images and

@@ -115,6 +115,8 @@ Anything else (including empty value or omitted variable) is considered as
   the default value is `yes`;
 - `MARKET_PRICE_IN_INFORMATION`: when set to a positive boolean-like value, the
   current market price will be added to informational message;
+
+  the default value is `no`;
 - `MESSAGE_TIME_ZONE`: to display date in time in messages in the specified time
   zone;
 
@@ -126,6 +128,10 @@ Anything else (including empty value or omitted variable) is considered as
   - <https://twiki.org/cgi-bin/xtra/tzdatepick.html>;
   - <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones>;
 
+- `NRG_AMOUNT_IN_CURRENCY`: when set to a positive boolean-like value, NRG
+  balance in success messages is displayed in the configured currency;
+
+  the default value is `no`;
 - `TELEGRAM_BOT_TOKEN`: token for Telegram bot to send Energi Core Node Monitor
   messages to;
 
