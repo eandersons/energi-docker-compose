@@ -32,6 +32,39 @@ message_date() {
   TZ="${MESSAGE_TIME_ZONE}" date -R
 }
 
+nrg_amount_info() {
+  label="${1:?}"
+  nrg_balance="${2:?}"
+  balance_text="${label}: "
+  balance_indentation="${#balance_text}"
+  balance_text="$(printf '%s%s NRG\n' "${balance_text}" "${nrg_balance}")"
+  market_price ''
+
+  if value_to_bool "${NRG_AMOUNT_IN_CURRENCY}"; then
+    balance_text="$(printf '%s\n%*s%s %s' \
+      "${balance_text}" \
+      "${balance_indentation}" \
+      " " \
+      "$(printf '%.2f' \
+        "$(printf '%s * %s\n' "${nrg_balance}" "${NRGMKTPRICE}" | bc)")" \
+      "${CURRENCY}")"
+  fi
+
+  printf '%s' "${balance_text}"
+}
+
+nrg_difference_info() {
+  nrg_amount_info 'Difference' "${1:?}"
+}
+
+masternode_reward_info() {
+  nrg_amount_info 'Masternode Reward' "${1:?}"
+}
+
+new_balance_info() {
+  nrg_amount_info 'New Balance' "${1:?}"
+}
+
 override_read() {
   if value_to_bool "${INTERACTIVE}"; then
     printf '%s\n' "${1}"
@@ -39,6 +72,10 @@ override_read() {
   else
     read -e -i "${1}" -r
   fi
+}
+
+stake_reward_info() {
+  nrg_amount_info 'Stake Reward' "${1:?}"
 }
 
 total_node_balance() {

@@ -1026,17 +1026,17 @@ SEND_EMAIL() {
 
   if [[ ${STAKERWD} == Y ]]; then
     {
-      printf 'New Balance: %s NRG\n' "${ACCTBALANCE}"
-      printf 'Stake Reward: %s NRG\n' "${REWARDAMT}"
+      printf '%s\n' "$(stake_reward_info "${REWARDAMT}")"
       printf 'Block Number: %s\n' "${CHKBLOCK}"
+      printf '%s\n' "$(new_balance_info "${ACCTBALANCE}")"
       printf 'Next Stake ETA: %s\n' "${TIME_TO_STAKE}"
     } >>$TOMAILFILE
   elif [[ ${MNRWD} == Y ]]; then
     {
       printf 'Masternode Collateral: %s NRG\n' "${MNCOLLATERAL}"
-      printf 'Masternode Reward: %s NRG\n' "${MNTOTALNRG}"
+      printf '%s\n' "$(masternode_reward_info "${MNTOTALNRG}")"
       printf '%s\n' "${_MNREWARDS}"
-     } >>$TOMAILFILE
+    } >>$TOMAILFILE
   fi
 
   printf '\n' >>$TOMAILFILE
@@ -1975,8 +1975,8 @@ REPORT_INFO_ABOUT_NODE() {
         _PAYLOAD="$(printf '%s\n%s\n%s\n%s\n%s\n%s' \
           "__Account: ${SHORTADDR}__" \
           "Market Price: ${CURRENCY} ${NRGMKTPRICE}" \
-          "Stake Reward: ${REWARDAMT} NRG" \
-          "New Balance: ${ACCTBALANCE} NRG" \
+          "$(stake_reward_info "${REWARDAMT}")" \
+          "$(new_balance_info "${ACCTBALANCE}")" \
           "Block Number: ${CHKBLOCK}" \
           "Next Stake ETA: ${TIME_TO_STAKE}")"
         # Post message
@@ -2088,8 +2088,8 @@ REPORT_INFO_ABOUT_NODE() {
             _PAYLOAD="$(printf '%s\n%s\n%s\n%s\n%s\n%s\n\n%s' \
               "__Account: ${SHORTADDR}__" \
               "Market Price: ${CURRENCY} ${NRGMKTPRICE}" \
-              "Masternode Reward: ${MNTOTALNRG} NRG" \
-              "$(printf 'New Balance: %s NRG' \
+              "$(masternode_reward_info "${MNTOTALNRG}")" \
+              "$(new_balance_info \
                 "$(total_node_balance "${GETBALANCE}" "${MNCOLLATERAL}")")" \
               "Masternode Collateral: ${MNCOLLATERAL} NRG" \
               "$(printf 'Next Reward ETA: %s' \
@@ -2326,35 +2326,31 @@ New uptime: ${UPTIME_HUMAN}" \
     [[ -z "${GETTOTALBALANCE}" ]] ||
       [[ $(echo "${GETTOTALBALANCE} < 0.1" | bc -l) -eq 1 ]]
   then
-    SEND_ERROR \
-      "__${USRNAME} ${DAEMON_BIN}__
-Balance is now near zero ${TICKER_NAME}!
-Before: ${PAST_BALANCE}
-After: ${GETTOTALBALANCE} " \
-      "" \
-      "${DISCORD_WEBHOOK_USERNAME}" \
-      "${DISCORD_WEBHOOK_AVATAR}"
+    SEND_ERROR "$(
+      printf '%s\n%s\n%s\n%s' \
+        "__${USRNAME} ${DAEMON_BIN}__" \
+        "Balance is now near zero ${TICKER_NAME}!" \
+        "$(nrg_amount_info Before "${PAST_BALANCE}")" \
+        "$(nrg_amount_info After "${GETTOTALBALANCE}")"
+    )" "" "${DISCORD_WEBHOOK_USERNAME}" "${DISCORD_WEBHOOK_AVATAR}"
   # Larger amount has been moved off this wallet.
   elif [[ $(echo "${BALANCE_DIFF} < -1" | bc -l) -gt 0 ]]; then
-    SEND_WARNING \
-      "__${USRNAME} ${DAEMON_BIN}__
-Balance has decreased by over 1 ${TICKER_NAME}
-Difference: ${BALANCE_DIFF}
-New Balance: ${GETTOTALBALANCE}" \
-      "" \
-      "${DISCORD_WEBHOOK_USERNAME}" \
-      "${DISCORD_WEBHOOK_AVATAR}"
-
+    SEND_WARNING "$(
+      printf '%s\n%s\n%s\n%s' \
+        "__${USRNAME} ${DAEMON_BIN}__" \
+        "Balance has decreased by over 1 ${TICKER_NAME}" \
+        "$(nrg_difference_info "${BALANCE_DIFF}")" \
+        "$(new_balance_info "${GETTOTALBALANCE}")"
+    )" "" "${DISCORD_WEBHOOK_USERNAME}" "${DISCORD_WEBHOOK_AVATAR}"
   # Small amount has been moved.
   elif [[ $(printf '%i < 1\n' "${BALANCE_DIFF}" | bc -l) -gt 0 ]]; then
-    SEND_INFO \
-      "__${USRNAME} ${DAEMON_BIN}__
-Small amount of ${TICKER_NAME} has been transfered
-Difference: ${BALANCE_DIFF}
-New Balance: ${GETTOTALBALANCE}" \
-      "" \
-      "${DISCORD_WEBHOOK_USERNAME}" \
-      "${DISCORD_WEBHOOK_AVATAR}"
+    SEND_INFO "$(
+      printf '%s\n%s\n%s\n%s' \
+        "__${USRNAME} ${DAEMON_BIN}__" \
+        "Small amount of ${TICKER_NAME} has been transfered" \
+        "$(nrg_difference_info "${BALANCE_DIFF}")" \
+        "$(new_balance_info "${GETTOTALBALANCE}")"
+    )" "" "${DISCORD_WEBHOOK_USERNAME}" "${DISCORD_WEBHOOK_AVATAR}"
   # More than 1 Coin has been added.
   elif [[ $(echo "${BALANCE_DIFF} >= 1" | bc -l) -gt 0 ]]; then
     if
@@ -2367,14 +2363,13 @@ New Balance: ${GETTOTALBALANCE}" \
     then
       return
     else
-      SEND_SUCCESS \
-        "__${USRNAME} ${DAEMON_BIN}__
-Larger amount of ${TICKER_NAME} has been transfered
-Difference: ${BALANCE_DIFF}
-New Balance: ${GETTOTALBALANCE}" \
-        "" \
-        "${DISCORD_WEBHOOK_USERNAME}" \
-        "${DISCORD_WEBHOOK_AVATAR}"
+      SEND_SUCCESS "$(
+        printf '%s\n%s\n%s\n%s' \
+          "__${USRNAME} ${DAEMON_BIN}__" \
+          "Larger amount of ${TICKER_NAME} has been transfered" \
+          "$(nrg_difference_info "${BALANCE_DIFF}")" \
+          "$(new_balance_info "${GETTOTALBALANCE}")"
+      )" "" "${DISCORD_WEBHOOK_USERNAME}" "${DISCORD_WEBHOOK_AVATAR}"
     fi
   fi
 
