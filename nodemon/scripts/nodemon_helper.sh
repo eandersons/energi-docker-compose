@@ -1,7 +1,22 @@
 #!/bin/bash
 
+value_to_bool() {
+  value="${1,,}"
+
+  if
+    [[ "${value}" == 'y' ]] ||
+      [[ "${value}" == 'yes' ]] ||
+      [[ "${value}" == 'true' ]] ||
+      [[ "${value}" -eq 1 ]]
+  then
+    return 0
+  fi
+
+  return 1
+}
+
 ip_address() {
-  if [[ "${ECNM_SHOW_IP_EXTERNAL:-n}" == 'y' ]]; then
+  if value_to_bool "${ECNM_SHOW_IP_EXTERNAL:-no}"; then
     IP_ADDRESS="$(wget -qO- https://api.ipify.org)"
   else
     IP_ADDRESS="$(hostname -i)"
@@ -84,19 +99,4 @@ total_node_balance() {
   printf '%s' "$(printf '%s\n' "${masternode_collateral} + ${staking_balance}" |
     bc -l |
     sed '/\./ s/\.\{0,1\}0\{1,\}$//')"
-}
-
-value_to_bool() {
-  value="${1,,}"
-
-  if
-    [[ "${value}" == 'y' ]] ||
-      [[ "${value}" == 'yes' ]] ||
-      [[ "${value}" == 'true' ]] ||
-      [[ "${value}" -eq 1 ]]
-  then
-    return 0
-  fi
-
-  return 1
 }
