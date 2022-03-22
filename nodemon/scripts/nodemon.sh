@@ -79,6 +79,7 @@ DISCORD_TITLE_LIMIT=266
 GITAPI_URL="https://api.github.com/repos/energicryptocurrency/energi/releases/latest"
 # Set variables
 MNTOTALNRG=0
+REMOVE_TRALING_DECIMAL_ZEROS_PATTERN='/\./ s/\.\?0\+$//'
 # get username; exclude testnet
 USRNAME=$(find /home -name nodekey 2>&1 |
   grep -v "Permission denied" |
@@ -1947,7 +1948,7 @@ REPORT_INFO_ABOUT_NODE() {
           "${COINS_STAKED_TOTAL_NETWORK}" \
           "${ACCTBALANCE}" \
           "${BLOCKTIME_SECONDS}" \
-          "${COEFF}" | bc -l | sed '/\./ s/\.\{0,1\}0\{1,\}$//')
+          "${COEFF}" | bc -l | sed "${REMOVE_TRALING_DECIMAL_ZEROS_PATTERN}")
 
         # Max of COOLDOWNTIME and SEC_TO_AVG_STAKE_PER_BAL
 
@@ -2029,12 +2030,12 @@ REPORT_INFO_ABOUT_NODE() {
               jq -r '.result | map(.value | tonumber) | add ')")
           BLOCKSUMNRG=$(printf ' %s / 1000000000000000000\n' "${BLOCKSUMWEI}" |
             bc -l |
-            sed '/\./ s/\.\{0,1\}0\{1,\}$//')
+            sed "${REMOVE_TRALING_DECIMAL_ZEROS_PATTERN}")
           # Masternode reward based on collateral
           MASTERNODE_REWARD=$(
             printf '%s * %s / 1000\n' "${MN_REWARD_FACTOR}" "${MNCOLLATERAL}" |
               bc -l |
-              sed '/\./ s/\.\{0,1\}0\{1,\}$//'
+              sed "${REMOVE_TRALING_DECIMAL_ZEROS_PATTERN}"
           )
 
           # Time of block generation
@@ -2056,7 +2057,7 @@ REPORT_INFO_ABOUT_NODE() {
             );"
           MNTOTALNRG=$(printf ' %s + %s \n' "${MNTOTALNRG}" "${BLOCKSUMNRG}" |
             bc -l |
-            sed '/\./ s/\.\{0,1\}0\{1,\}$//')
+            sed "${REMOVE_TRALING_DECIMAL_ZEROS_PATTERN}")
           SQL_QUERY "REPLACE INTO mn_blocks (
             mnAddress, mnBlocksReceived, startMnBlk, endMnBlk, mnTotalReward
           ) VALUES ('${ADDR}', 'N', '${STARTMNBLK}', '0', '${MNTOTALNRG}');"
@@ -2084,7 +2085,7 @@ REPORT_INFO_ABOUT_NODE() {
             SEC_TO_MNREWARD=$(printf '(%s) / 10000000000000000000000 * 60 \n' \
               "$(printf '%.0f' "$(
                 ${COMMAND} "masternode.stats().activeCollateral" 2>/dev/null
-              )")" | bc -l | sed '/\./ s/\.\{0,1\}0\{1,\}$//')
+              )")" | bc -l | sed "${REMOVE_TRALING_DECIMAL_ZEROS_PATTERN}")
             _PAYLOAD="$(printf '%s\n%s\n%s\n%s\n%s\n%s\n\n%s' \
               "__Account: ${SHORTADDR}__" \
               "Market Price: ${CURRENCY} ${NRGMKTPRICE}" \
@@ -2314,9 +2315,10 @@ New uptime: ${UPTIME_HUMAN}" \
     SQL_QUERY "REPLACE INTO variables (key, value)
       VALUES ('${DATADIR}:balance', '${GETTOTALBALANCE}');"
   fi
-  BALANCE_DIFF=$(echo "${GETTOTALBALANCE} - ${PAST_BALANCE}" |
-    bc -l |
-    sed '/\./ s/\.\{0,1\}0\{1,\}$//')
+
+  BALANCE_DIFF="$(printf '%f' \
+    "$(printf '%f - %f\n' "${GETTOTALBALANCE}" "${PAST_BALANCE}" | bc -l)" |
+    sed "${REMOVE_TRALING_DECIMAL_ZEROS_PATTERN}")"
 
   # Empty Wallet.
   if [[ $(echo "${BALANCE_DIFF} != 0 " | bc -l) -eq 0 ]]; then
@@ -2343,7 +2345,7 @@ New uptime: ${UPTIME_HUMAN}" \
         "$(new_balance_info "${GETTOTALBALANCE}")"
     )" "" "${DISCORD_WEBHOOK_USERNAME}" "${DISCORD_WEBHOOK_AVATAR}"
   # Small amount has been moved.
-  elif [[ $(printf '%i < 1\n' "${BALANCE_DIFF}" | bc -l) -gt 0 ]]; then
+  elif [[ $(printf '%f < 1\n' "${BALANCE_DIFF}" | bc -l) -gt 0 ]]; then
     SEND_INFO "$(
       printf '%s\n%s\n%s\n%s' \
         "__${USRNAME} ${DAEMON_BIN}__" \
