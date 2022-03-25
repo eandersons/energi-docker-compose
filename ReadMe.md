@@ -11,7 +11,7 @@ intended for use on non-Ubuntu Linux machines, though `energi-docker-compose`
 can be used on Ubuntu as well and it should work on macOS too.
 Theoretically this repository should also work on Windows by using WSL and maybe
 Git Bash or any other Linux shell emulator that supports commands used in the
-helper shell script `helper`.
+helper shell script [`helper`](helper).
 
 ---
 
@@ -60,11 +60,13 @@ To run Energi Core Node in a Docker container:
     account's address and password to automatically unlock account for staking
     when launching Energi Core Node;
 
-- copy keystore file(s) to `setup/.energi_core/keystore`;
+- copy keystore file(s) to
+  [`setup/.energi_core/keystore`](setup/.energicore3/keystore);
 
   > Note: original keystore file(s) should be stored in a safe place as the
-  > keystore file(s) that will be placed in `setup/.energi_core/keystore` will
-  > be moved to a Docker volume.
+  > keystore file(s) that will be placed in the directory
+  > [`setup/.energi_core/keystore`](setup/.energicore3/keystore) will be moved
+  > to a Docker volume.
 
 - open the necessary ports for external inbound access in router and/or
   firewall:
@@ -162,15 +164,15 @@ up are located in [`nodemon/ReadMe.md`](nodemon/ReadMe.md).
 Energi Core Node Monitor container provides some additional features that can be
 enabled optionally:
 
-- configurable interval between Monitor runs (`ECNM_INTERVAL`);
-- configurable timezone for time display in messages (`MESSAGE_TIME_ZONE`);
+- configurable interval between Monitor runs
+  ([`ECNM_INTERVAL`](nodemon/ReadMe.md#ecnm_interval));
+- configurable timezone for time display in messages
+  ([`MESSAGE_TIME_ZONE`](nodemon/ReadMe.md#message_time_zone));
 - display the current Enrgi market price in the configured currency in
-  information messages (`MARKET_PRICE_IN_INFORMATION`);
-- display reward amount, balance and its changes also in the configured
-  currency (`NRG_AMOUNT_IN_CURRENCY`).
-
-Configuration environment variables are described in
-[the section "Environment variables explained" in `nodemon/ReadMe.md`](nodemon/ReadMe.md#environment-variables-explained)
+  information messages
+  ([`MARKET_PRICE_IN_INFORMATION`](nodemon/ReadMe.md#market_price_in_information));
+- display reward amount, balance and its changes also in the configured currency
+  ([`NRG_AMOUNT_IN_CURRENCY`](nodemon/ReadMe.md#nrg_amount_in_currency)).
 
 ## Update
 
@@ -199,7 +201,7 @@ isues are resolved in the repopsitory.
 
 ## Helper script
 
-A little helper script `helper` is available. To see what it provides,
+A little helper script [`helper`](helper) is available. To see what it provides,
 `./helper help` should be executed.
 
 ## Credits
