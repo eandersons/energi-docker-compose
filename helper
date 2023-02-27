@@ -40,7 +40,7 @@ Available commands:
         Energi Core Node synchronisation and staking status
     ${command_pattern_update}
         Update image(s) and recreate container(s).
-        Version argument (i.e. v3.1.0) can be used to build images and create
+        Version argument (i.e. v1.1.4) can be used to build images and create
         containers with Energi version other than the one that is specified in
         \`${env}\`
 
@@ -298,7 +298,7 @@ update)
     if [ -z "${version}" ] || [ "${version}" = '' ]
     then
       printf 'Invalid version format!\n'
-      printf 'Version must be formatted like vX.Y.Z (for example: v3.1.0).\n'
+      printf 'Version must be formatted like vX.Y.Z (for example: v1.1.4).\n'
       printf 'Version provided: %s\n' "${last_argument}"
 
       exit 1
