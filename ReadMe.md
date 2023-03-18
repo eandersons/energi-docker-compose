@@ -61,11 +61,11 @@ To run Energi Core Node in a Docker container:
     when launching Energi Core Node;
 
 - copy keystore file(s) to
-  [`setup/.energi_core/keystore`](setup/.energicore3/keystore);
+  [`setup/.energi_core/keystore`](setup/.energi_core/keystore);
 
   > Note: original keystore file(s) should be stored in a safe place as the
   > keystore file(s) that will be placed in the directory
-  > [`setup/.energi_core/keystore`](setup/.energicore3/keystore) will be moved
+  > [`setup/.energi_core/keystore`](setup/.energi_core/keystore) will be moved
   > to a Docker volume.
 
 - open the necessary ports for external inbound access in router and/or
