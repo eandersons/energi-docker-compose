@@ -35,7 +35,7 @@ Available commands:
         Setup Energi Core Node container(s)
     ${command_pattern_start}
         Start Energi Core Node container(s); this is a shortcut for
-        \`docker-compose up --detach [${service_choices}]\`
+        \`docker compose up --detach [${service_choices}]\`
     ${command_pattern_status}
         Energi Core Node synchronisation and staking status
     ${command_pattern_update}
@@ -52,12 +52,12 @@ service_arguments_message="Valid arguments are:
   - no value or \`all\`;
   - \`core\`;
   - \`monitor\`."
-exec='docker-compose exec'
+exec='docker compose exec'
 exec_core="${exec} core"
 exec_monitor="${exec} monitor"
-run='docker-compose run --rm'
-stop='docker-compose stop'
-up='docker-compose up --detach'
+run='docker compose run --rm'
+stop='docker compose stop'
+up='docker compose up --detach'
 
 bootstrap_chaindata() {
   ${run} --entrypoint '/bin/sh bootstrap-chaindata.sh' core
@@ -319,8 +319,8 @@ update)
       "$( value_from_file \
         "${pattern_monitor_image_prefix}" \
         "${pattern_monitor_tag_value}" \
-        'docker-compose.override.template.yml' )" \
-      'docker-compose.override.yml'
+        'compose.override.template.yaml' )" \
+      'compose.override.yaml'
     ;;
   esac
 

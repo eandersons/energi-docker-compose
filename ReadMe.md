@@ -87,11 +87,11 @@ To run Energi Core Node in a Docker container:
   Monitor container should be set up and started as well and all the neccessary
   preparation for it has been done);
 
-  > `docker-compose` is used in `./helper setup` so `sudo` might be necessary.
+  > `docker compose` is used in `./helper setup` so `sudo` might be necessary.
 
 The aforementioned actions must be executed only once - when running Energi Core
 Node container for the first time. Later on container can be started with the
-command `docker-compose up --detach` or with the helper command
+command `docker compose up --detach` or with the helper command
 `./helper start`.
 
 To check if Energi Core Node is running and account is unlocked for staking, the
@@ -142,7 +142,7 @@ Official Energi documentation:
 To apply preimages for Energi Core Node container the following command
 can be used: `./helper apply-preimages`.
 
-> `docker-compose` is used in `./helper apply-preimages` so `sudo` might be
+> `docker compose` is used in `./helper apply-preimages` so `sudo` might be
 > necessary.
 
 ### Bootstrap chaindata
@@ -153,7 +153,7 @@ Official Energi documentation:
 To bootstrap chaindata for Energi Core Node container the following command can
 be used: `./helper bootstrap-chaindata`.
 
-> `docker-compose` is used in `./helper bootstrap-chaindata` so `sudo` might be
+> `docker compose` is used in `./helper bootstrap-chaindata` so `sudo` might be
 > necessary.
 
 ## Energi Core Node Monitor

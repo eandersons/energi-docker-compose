@@ -31,9 +31,8 @@ Dockerised Energi Core Node Monitor for the dockerised Energi Core Node.
 ## Enable the Energi Core Node Monitor service
 
 To enable Energi Core Node Monitor,
-[`docker-compose.override.template.yml`](../docker-compose.override.template.yml)
-has to be copied in the root directory and renamed to
-`docker-compose.override.yml`.
+[`compose.override.template.yaml`](../compose.override.template.yaml)
+has to be copied in the root directory and renamed to `compose.override.yaml`.
 Then [`nodemon/.env.template.env`](.env.template.env) must be copied and renamed
 to `.env` and values should be provided for environment variables when a
 non-interactive setup is used (value for
@@ -44,10 +43,10 @@ described in [the subsection below](#environment-variables).
 To setup Energi Core Node Monitor container, command `./helper setup monitor`
 (or `./helper setup` if Energi Core Node and Energi Core Node Monitor are set up
 together) must be executed from the root directory (where
-[`docker-compose.yml`](../docker-compose.yml) is located). Energi Core Node
+[`compose.yaml`](../compose.yaml) is located). Energi Core Node
 Monitor container will be automatically started afterwards.
 
-> `docker-compose` is used in `./helper setup` so `sudo` might be necessary.
+> `docker compose` is used in `./helper setup` so `sudo` might be necessary.
 >
 > After the Energi Core Node Monitor container is launched for the first time or
 > it is recreated, a message about user and group changes will be sent.
