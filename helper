@@ -15,7 +15,7 @@ command_pattern_status='staking-status | status'
 env='.env'
 help_description='Print this help message'
 help_message="\
-edc | helper - a helper command for \`energi-docker-compose\`, a dockerised
+helper - a helper command for \`energi-docker-compose\`, a dockerised
 Energi Core Node.
 
 Available commands:
