@@ -1,6 +1,6 @@
 #!/bin/sh
-
-exec="${ENERGI_BIN} --datadir=${ENERGI_CORE_DIR} attach --exec"
+. ./energi_command.sh
+exec="${energi_command} attach --exec"
 status='miner.stakingStatus()'
 syncing='nrg.syncing'
 
