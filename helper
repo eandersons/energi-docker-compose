@@ -101,9 +101,9 @@ apply-preimages | preimages)
   ${stop}
   exit_code="${?}"
   ${run} --entrypoint '/bin/sh apply-preimages.sh' core
-  exit_code=$(( "${exit_code}" + "${?}" ))
+  exit_code=$((exit_code + ${?}))
   ${up}
-  exit_code=$(( "${exit_code}" + "${?}" ))
+  exit_code=$((exit_code + ${?}))
 
   exit ${exit_code}
   ;;
@@ -119,7 +119,7 @@ bootstrap-chaindata | chaindata)
   ${stop}
   exit_code="${?}"
   bootstrap_chaindata && ${up}
-  exit_code=$(( "$exit_code" + "${?}" ))
+  exit_code=$((exit_code + ${?}))
 
   exit "${exit_code}"
   ;;
@@ -236,13 +236,12 @@ update)
     pattern_value="${2}"
     new_value="${3}"
     target="${4}"
-    current_value="$( value_from_file \
+    current_value="$(value_from_file \
       "${pattern_prefix}" \
       "${pattern_value}" \
-      "${target}" )"
+      "${target}")"
 
-    if [ "${new_value}" != "${current_value}" ] && [ -f "${target}" ]
-    then
+    if [ "${new_value}" != "${current_value}" ] && [ -f "${target}" ]; then
       printf "Current value \`%s\` differs from the provided one: \`%s\`.\n" \
         "${current_value}" \
         "${new_value}"
@@ -278,32 +277,29 @@ update)
 
   for last_argument in "${@}"; do :; done
 
-  if [ "${last_argument}" = 'update' ]
-  then
+  if [ "${last_argument}" = 'update' ]; then
     last_argument=''
   fi
 
   pattern_version_value='v[0-9]\+\.[0-9]\+\.[0-9]\+'
-  env_version="$( value_from_file \
+  env_version="$(value_from_file \
     '^ENERGI_VERSION=' \
     "${pattern_version_value}" \
-    "${env}" )"
+    "${env}")"
 
   case "${last_argument}" in
   '' | all | core | monitor) version="${env_version}" ;;
   *)
-    version=$( printf '%s' \
-      "${last_argument}" | grep "${pattern_version_value}" )
+    version=$(printf '%s' \
+      "${last_argument}" | grep "${pattern_version_value}")
 
-    if [ -z "${version}" ] || [ "${version}" = '' ]
-    then
+    if [ -z "${version}" ] || [ "${version}" = '' ]; then
       printf 'Invalid version format!\n'
       printf 'Version must be formatted like vX.Y.Z (for example: v1.1.4).\n'
       printf 'Version provided: %s\n' "${last_argument}"
 
       exit 1
-    elif [ "${version}" != "${env_version}" ]
-    then
+    elif [ "${version}" != "${env_version}" ]; then
       export ENERGI_VERSION="${version}"
     fi
     ;;
@@ -316,10 +312,10 @@ update)
     update_value_in_file \
       "${pattern_monitor_image_prefix}" \
       "${pattern_monitor_tag_value}" \
-      "$( value_from_file \
+      "$(value_from_file \
         "${pattern_monitor_image_prefix}" \
         "${pattern_monitor_tag_value}" \
-        'compose.override.template.yaml' )" \
+        'compose.override.template.yaml')" \
       'compose.override.yaml'
     ;;
   esac
