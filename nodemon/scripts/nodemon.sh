@@ -76,7 +76,7 @@ DISCORD_WEBHOOK_USERNAME_DEFAULT='Energi Node Monitor'
 DISCORD_WEBHOOK_AVATAR_DEFAULT='https://i.imgur.com/8WHSSa7s.jpg'
 DISCORD_TITLE_LIMIT=266
 # NRG Parameters
-GITAPI_URL="https://api.github.com/repos/energicryptocurrency/energi/releases/latest"
+GITAPI_URL="https://api.github.com/repos/energicryptocurrency/go-energi/releases/latest"
 # Set variables
 MNTOTALNRG=0
 REMOVE_TRALING_DECIMAL_ZEROS_PATTERN='/\./ s/\.\?0\+$//'
@@ -2450,7 +2450,7 @@ Connections: ${GETCONNECTIONCOUNT}"
   fi
 
   # Check Github for URL of latest version
-  GIT_VERSION=$(curl -s ${GITAPI_URL} | jq -r '.tag_name')
+  GIT_VERSION=$(curl -s -L ${GITAPI_URL} | jq -r '.tag_name')
   # Extract latest version number without the 'v'
   GIT_LATEST="$(printf '%s' "${GIT_VERSION}" | sed 's/v//g')"
 
