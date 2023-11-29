@@ -212,6 +212,6 @@ A list of tools and sources used in this repository:
 - [Docker Compose](https://docs.docker.com/compose/);
 - [Energi Docker image](https://hub.docker.com/r/energicryptocurrency/energi)
   (source:
-  [Energi Core GitHub repository](https://github.com/energicryptocurrency/energi)
-  ([`containers/docker/master-alpine/Dockerfile`](https://github.com/energicryptocurrency/energi/blob/master/containers/docker/master-alpine/Dockerfile)));
+  [Energi Core GitHub repository](https://github.com/energicryptocurrency/go-energi)
+  ([`containers/docker/master-alpine/Dockerfile`](https://github.com/energicryptocurrency/go-energi/blob/master/containers/docker/master-alpine/Dockerfile)));
 - [Energi Core Node Monitor script `nodemon.sh`](https://github.com/energicryptocurrency/energi3-provisioning/blob/master/scripts/linux/nodemon.sh).
