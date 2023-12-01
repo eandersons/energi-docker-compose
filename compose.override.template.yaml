@@ -4,8 +4,8 @@ services:
       args:
         ENERGI_BIN: "${ENERGI_BIN}"
         ENERGI_CORE_DIR: "${ENERGI_CORE_DIR}"
-        ENERGI_VERSION: ${ENERGI_VERSION}
-        STAKER_HOME: ${STAKER_HOME}
+        ENERGI_VERSION: "${ENERGI_VERSION}"
+        STAKER_HOME: "${STAKER_HOME}"
       context: nodemon
     depends_on:
       - core

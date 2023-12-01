@@ -2654,12 +2654,18 @@ GET_NODE_INFO() {
     }
 
     # Command to get a list of processes with uptime
-    ps_uptime='ps --no-headers -axo user:32,pid,etimes,command'
+    ps_uptime_args='--no-headers -axo user:32,pid,etimes,command'
     # Get the uptime of the Core container.
-    core_daemon_pid="$(ssh core "pgrep ${DAEMON_BIN}")"
-    UPTIME="$(uptime "$(ssh core "${ps_uptime}")" "${core_daemon_pid}")"
+    UPTIME="$(
+      uptime \
+        "$(printf '%s\n' "${ps_uptime_args}" | nc core 65432)" \
+        "$(printf '%s\n' "${DAEMON_BIN}" | nc core 65434)"
+      # Probably the line above can be replaced with `1` as the Energi process
+      # in the core node container should always have PID `1`.
+    )"
     # Get the uptime of the Node Monitor container.
-    UPTIME_MONITOR="$(uptime "$(${ps_uptime})" "${DAEMON_PID}")"
+    # shellcheck disable=SC2086
+    UPTIME_MONITOR="$(uptime "$(ps ${ps_uptime_args})" "${DAEMON_PID}")"
   fi
 
   # Skip if filtered out
