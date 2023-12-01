@@ -12,10 +12,10 @@ services:
       args:
         ENERGI_BIN: "${ENERGI_BIN}"
         ENERGI_CORE_DIR: "${ENERGI_CORE_DIR:?}"
-        ENERGI_VERSION: ${ENERGI_VERSION:?"}
-        STAKER_HOME: ${STAKER_HOME:?}
+        ENERGI_VERSION: "${ENERGI_VERSION:?}"
+        STAKER_HOME: "${STAKER_HOME:?}"
       context: .
-    image: energi-core-node:${ENERGI_VERSION}-0.0
+    image: energi-core-node:${ENERGI_VERSION}-${NODE_MONITOR_IMAGE_VERSION_SUFFIX}
     ports:
       - 39797:39797/tcp
       - 39797:39797/udp
