@@ -15,7 +15,7 @@ services:
         ENERGI_VERSION: "${ENERGI_VERSION:?}"
         STAKER_HOME: "${STAKER_HOME:?}"
       context: .
-    image: energi-core-node:${ENERGI_VERSION}-${NODE_MONITOR_IMAGE_VERSION_SUFFIX}
+    image: energi-core-node:${ENERGI_VERSION}-${NODE_IMAGE_VERSION_SUFFIX}
     ports:
       - 39797:39797/tcp
       - 39797:39797/udp

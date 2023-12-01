@@ -26,6 +26,7 @@
 #   1.3.0  20210208  ZAlam Update USRNAME & DATADIR; support all versions
 #   1.3.1  20211208  ZAlam Energi Core Node repo change
 #   1.3.5  20210101  ZAlam Exclude TTY executions & use correct ${ENERGI_EXEC} binary
+#   1.3.6  20230903  ZAlam Repo changed to go-energi
 
 # Energi Core Node Monitor for `energi-docker-compose`
 #
@@ -37,7 +38,7 @@ INTERACTIVE=${INTERACTIVE_SETUP:-yes}
 source nodemon_helper.sh
 
 # Set script version
-NODEMONVER=1.3.5
+NODEMONVER=1.3.6
 
 : '
 # Run this file
