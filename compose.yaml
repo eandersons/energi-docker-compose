@@ -1,5 +1,3 @@
-version: '3.8'
-
 secrets:
   account_address:
     file: ./configuration/energi_account_address
