@@ -101,7 +101,7 @@ One webhook address can be used for all message types.
 
 More detailed instructions on how to set up Discord to receive messages from the
 Energi Core Node Monitor are located in
-[the official Energi Core Node Monitoring Tool guide (the section "Setup Discord")](https://wiki.energi.world/en/advanced/nodemon#discord).
+[the official Energi Core Node Monitoring Tool guide (the section "Setup Discord")](https://wiki.energi.world/docs/guides/nodemon#discord).
 
 ###### `DISCORD_WEBHOOK_ERROR`
 
