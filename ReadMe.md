@@ -5,8 +5,8 @@ using [Docker Compose](https://docs.docker.com/compose/) and the official
 [Energi image](https://hub.docker.com/r/energicryptocurrency/energi).
 
 As Energi Core node officially can be run on macOS, Ubuntu and Windows (menu
-subsections "Staking Guides" and "VPS Guides" in
-[Energi Support Wiki](https://wiki.energi.world/en/home)), this repository is
+subsections "Staking Guide" and "Set up Linux VPS" in
+[Energi Support Wiki](https://wiki.energi.world/docs/guides)), this repository is
 intended for use on non-Ubuntu Linux machines, though `energi-docker-compose`
 can be used on Ubuntu as well and it should work on macOS too.
 Theoretically this repository should also work on Windows by using WSL and maybe
@@ -20,7 +20,7 @@ helper shell script [`helper`](helper).
 - [Masternode](#masternode)
 - [Troubleshooting](#troubleshooting)
   - [Apply preimages](#apply-preimages)
-  - [Bootstrap chaindata](#bootstrap-chaindata)
+  - [Bootstrap chain data](#bootstrap-chain-data)
 - [Energi Core Node Monitor](#energi-core-node-monitor)
 - [Update](#update)
 - [Helper script](#helper-script)
@@ -75,8 +75,8 @@ To run Energi Core Node in a Docker container:
   - `39797` UDP;
 
   `39797` TCP and UDP ports are required for staking and Masternode as it is
-  mentioned
-  [here (section "1.7. Firewall Rules")](https://wiki.energi.world/en/advanced/core-node-vps#h-17-firewall-rules);
+  mentioned on
+  [1.7. Firewall Rules)](https://wiki.energi.world/docs/guides/core-node-linux#17-firewall-rules);
 
 - optionally, the Energi Core Node Monitor container can be enabled;
   instructions on how to do it can be found in
@@ -105,20 +105,17 @@ executed after a while again to check if Energi Core Node is syncrhonised.
 
 `energi-docker-compose` is masternode ready. Masternode can be enabled by
 following the official
-[Masternode Guide](https://wiki.energi.world/en/masternode-guide).
+[Masternode Guide](https://wiki.energi.world/docs/guides/masternode-guide).
 
 A helper command is available to get masternode enode URL:
 `./helper masternode-enode-url` (shorter aliases are available as well:
 `masternode-enode`, `mn-enode-url`, `mn-enode`). It covers steps 3.1 and 3.2
 from the section
-[Announcing the Masternode](https://wiki.energi.world/en/masternode-guide#h-3-announcing-the-masternode).\
+[Announcing the Masternode](https://wiki.energi.world/docs/guides/masternode-guide#3---announcing-the-masternode).\
 Alternatively step 3.1 can be executed with `./helper attach`, then 3.2 as
 described in the guide.
 
 ## Troubleshooting
-
-General troubleshooting is described in the official
-[Energi troubleshooting guide](https://wiki.energi.world/en/core-node-troubleshoot).
 
 The following actions executed one by one might help if something goes sideways
 with chain synchronisation in Energi Core Node container:
@@ -131,13 +128,16 @@ with chain synchronisation in Energi Core Node container:
 
 If applying preimages and bootstraping chaindata did not help, it might help if
 those actions are executed again.
-[Energi support](https://wiki.energi.world/en/support/help-me) should be
+[Energi support](https://wiki.energi.world/docs/support) should be
 contacted if the problem is still persistent after multiple tries.
 
 ### Apply preimages
 
 Official Energi documentation:
-[Apply Preimages](https://wiki.energi.world/en/core-node-troubleshoot#preimages).
+[Apply Preimages](https://wiki.energi.world/core-node-troubleshoot#preimages)
+(note: the link currently is broken, but the same link currently (July 2024) is
+provided on
+[Energi Core Node Downloads](https://wiki.energi.world/docs/downloads/core-node)).
 
 To apply preimages for Energi Core Node container the following command
 can be used: `./helper apply-preimages`.
@@ -145,10 +145,10 @@ can be used: `./helper apply-preimages`.
 > `docker compose` is used in `./helper apply-preimages` so `sudo` might be
 > necessary.
 
-### Bootstrap chaindata
+### Bootstrap chain data
 
 Official Energi documentation:
-[Bootstrap Chaindata](https://wiki.energi.world/en/core-node-troubleshoot#bootstrap).
+[Bootstrap Chaindata](https://wiki.energi.world/docs/guides/bootstrap-core-node).
 
 To bootstrap chaindata for Energi Core Node container the following command can
 be used: `./helper bootstrap-chaindata`.

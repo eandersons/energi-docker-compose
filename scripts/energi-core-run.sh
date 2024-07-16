@@ -5,8 +5,8 @@
 /usr/bin/nc -lk -p 65432 -e ./netcat-ps.sh &
 /usr/bin/nc -lk -p 65434 -e ./netcat-pgrep.sh &
 . ./energi_command.sh
-# https://wiki.energi.world/en/3-1/advanced/core-node-linux#h-2212-mainnet (
-# section "2.2.1.2 Mainnet")
+# https://wiki.energi.world/docs/guides/core-node-linux#22-setup-auto-start
+# Section "2.2.1.2 - Mainnet"
 exec ${energi_command} \
   --gcmode archive \
   --masternode \
